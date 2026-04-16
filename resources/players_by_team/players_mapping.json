@@ -1102,5 +1102,96 @@
     "player_id": "清弦",
     "position": "中路",
     "file": "TCG-清弦.png"
+  },
+  {
+    "team": "南通Hero久竞",
+    "team_short": "Hero",
+    "player": "南通",
+    "player_id": "南通",
+    "file": "Hero-南通.png"
+  },
+  {
+    "team": "南通Hero久竞",
+    "team_short": "Hero",
+    "player": "坦然",
+    "player_id": "坦然",
+    "file": "Hero-坦然.png"
+  },
+  {
+    "team": "南通Hero久竞",
+    "team_short": "Hero",
+    "player": "落尘",
+    "player_id": "落尘",
+    "file": "Hero-落尘.png"
+  },
+  {
+    "team": "南通Hero久竞",
+    "team_short": "Hero",
+    "player": "妖刀",
+    "player_id": "妖刀",
+    "file": "Hero-妖刀.png"
+  },
+  {
+    "team": "南通Hero久竞",
+    "team_short": "Hero",
+    "player": "白清",
+    "player_id": "白清",
+    "file": "Hero-白清.png"
+  },
+  {
+    "team": "南通Hero久竞",
+    "team_short": "Hero",
+    "player": "绝心",
+    "player_id": "绝心",
+    "file": "Hero-绝心.png"
+  },
+  {
+    "team": "苏州KSG",
+    "team_short": "KSG",
+    "player": "流星",
+    "player_id": "流星",
+    "file": "KSG-流星.png"
+  },
+  {
+    "team": "苏州KSG",
+    "team_short": "KSG",
+    "player": "无言",
+    "player_id": "无言",
+    "file": "KSG-无言.png"
+  },
+  {
+    "team": "苏州KSG",
+    "team_short": "KSG",
+    "player": "句号",
+    "player_id": "句号",
+    "file": "KSG-句号.png"
+  },
+  {
+    "team": "苏州KSG",
+    "team_short": "KSG",
+    "player": "风箫",
+    "player_id": "风箫",
+    "file": "KSG-风箫.png"
+  },
+  {
+    "team": "苏州KSG",
+    "team_short": "KSG",
+    "player": "小屿",
+    "player_id": "小屿",
+    "file": "KSG-小屿.png"
+  },
+  {
+    "team": "苏州KSG",
+    "team_short": "KSG",
+    "player": "一笙",
+    "player_id": "一笙",
+    "file": "KSG-一笙.png"
+  },
+  {
+    "team": "苏州KSG",
+    "team_short": "KSG",
+    "player": "子阳",
+    "player_id": "子阳",
+    "file": "KSG-子阳.png"
   }
 ]

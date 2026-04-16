@@ -143,6 +143,15 @@ export const PLAYER_HD_AVATARS = {
     '青槐': 'resources/players_by_team/TCG-青槐.png',
     '鸣鸣': 'resources/players_by_team/EDGM-鸣鸣.png',
     '鹤辞': 'resources/players_by_team/TTG-鹤辞.png',
+    '坦然': 'resources/players_by_team/Hero-坦然.png',
+    '落尘': 'resources/players_by_team/Hero-落尘.png',
+    '玖熙': 'resources/players_by_team/Hero-玖熙.png',
+    '妖刀': 'resources/players_by_team/Hero-妖刀.png',
+    '白清': 'resources/players_by_team/Hero-白清.png',
+    '流星': 'resources/players_by_team/KSG-流星.png',
+    '句号': 'resources/players_by_team/KSG-句号.png',
+    '风箫': 'resources/players_by_team/KSG-风箫.png',
+    '絕意': 'resources/players_by_team/JDG-绝意.png',
 };
 
 export function getPlayerHDAvatarPath(playerName) {
