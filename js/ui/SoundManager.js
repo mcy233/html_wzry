@@ -30,7 +30,10 @@ export function setVolume(type, val) {
     _volume[type] = Math.max(0, Math.min(1, val));
     if (type === 'bgm' && _bgmGain) _bgmGain.gain.value = _volume.bgm;
     if (type === 'sfx' && _sfxGain) _sfxGain.gain.value = _volume.sfx;
+    if (type === 'bgm') updateFileVolumes();
 }
+
+export function getVolume(type) { return _volume[type] ?? 0; }
 
 function playTone(freq, duration, type = 'sine', gainVal = 0.3) {
     if (!_enabled) return;
@@ -259,4 +262,60 @@ export function sfxObjective() {
 
 export function sfxDiscard() {
     playTone(300, 0.1, 'sawtooth', 0.1);
+}
+
+/* ====== MP3文件播放（BGM/氛围音） ====== */
+let _fileBGM = null;
+let _fileAmbient = null;
+
+const BGM_FILES = {
+    menu:    'resources/audio/bgm/menu.mp3',
+    battle:  'resources/audio/bgm/battle.mp3',
+    victory: 'resources/audio/bgm/victory.mp3',
+};
+const AMBIENT_FILES = {
+    crowd: 'resources/audio/ambient/crowd-cheer.mp3',
+    arena: 'resources/audio/ambient/arena-hum.mp3',
+};
+
+function _tryPlayFile(src, loop, volume) {
+    const audio = new Audio();
+    audio.src = src;
+    audio.loop = loop;
+    audio.volume = Math.max(0, Math.min(1, volume));
+    audio.preload = 'auto';
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {});
+    return audio;
+}
+
+export function startFileBGM(type = 'menu') {
+    stopFileBGM();
+    if (!_enabled) return;
+    const src = BGM_FILES[type];
+    if (!src) return;
+    _fileBGM = _tryPlayFile(src, type !== 'victory', _volume.bgm);
+    _fileBGM.onerror = () => { _fileBGM = null; startBGM(type); };
+}
+
+export function stopFileBGM() {
+    if (_fileBGM) { _fileBGM.pause(); _fileBGM.src = ''; _fileBGM = null; }
+}
+
+export function startAmbient(type = 'arena') {
+    stopAmbient();
+    if (!_enabled) return;
+    const src = AMBIENT_FILES[type];
+    if (!src) return;
+    _fileAmbient = _tryPlayFile(src, true, _volume.bgm * 0.4);
+    _fileAmbient.onerror = () => { _fileAmbient = null; };
+}
+
+export function stopAmbient() {
+    if (_fileAmbient) { _fileAmbient.pause(); _fileAmbient.src = ''; _fileAmbient = null; }
+}
+
+export function updateFileVolumes() {
+    if (_fileBGM) _fileBGM.volume = Math.max(0, Math.min(1, _volume.bgm));
+    if (_fileAmbient) _fileAmbient.volume = Math.max(0, Math.min(1, _volume.bgm * 0.4));
 }

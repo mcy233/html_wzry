@@ -16,7 +16,7 @@ import { CARD_TYPES, LANES } from '../data/cards.js';
 import { createMobaMapSVG } from '../ui/MobaMap.js';
 import { renderCard, renderHandArea, renderCommandZone, renderEnemyCards, renderSettlements, renderCardCompact, renderLaneSelector } from '../ui/CardRenderer.js';
 import { sfxBan, sfxPick, sfxBattleStart, sfxVictory, sfxDefeat, sfxCheer, sfxConfirm, sfxSelect, sfxKill, sfxCardPlay, sfxCardReveal, sfxTowerDestroy, sfxObjective, sfxDiscard, startBGM, stopBGM } from '../ui/SoundManager.js';
-import { getCoachAnalysis, getCoachConfig, saveCoachConfig, estimateWinRate } from '../systems/AICoach.js';
+import { getCoachAnalysis, getCoachConfig, saveCoachConfig, estimateWinRate, getStructuredRecommendations } from '../systems/AICoach.js';
 
 function _formatCoachText(text) {
     return text.split('\n').filter(l => l.trim()).map(line => {
@@ -174,51 +174,65 @@ export class BattleScene {
         const myBan = async (label) => {
             this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, 'ban');
             this._updateBPStatus(main, label);
-            const h = await this._bpSelectHero(main, bpCtx, 'ban', allBanned(), allPicked(), picks);
+            this._updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, 'ban', label);
+            const h = await this._bpSelectHero(main, bpCtx, 'ban', allBanned(), allPicked(), picks, banned);
             banned.my.push(h); sfxBan();
         };
-        const enemyBan = () => {
+        const enemyBan = async () => {
+            this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, 'ban');
+            this._updateBPStatus(main, `${this._enemyTeam.shortName} 正在思考禁用...`);
+            await this._sleep(1200 + Math.random() * 2300);
             const pool = this._getEnemyBanCandidates(bpCtx, allBanned());
             if (pool.length) { banned.enemy.push(pool[0]); sfxBan(); }
         };
         const myPick = async (label) => {
             this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, 'pick');
             this._updateBPStatus(main, label);
-            const r = await this._bpPickWithRole(main, bpCtx, allBanned(), allPicked(), picks, myPickRoles, roles);
+            this._updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, 'pick', label);
+            const r = await this._bpPickWithRole(main, bpCtx, allBanned(), allPicked(), picks, myPickRoles, roles, banned);
             picks.my.push(r.hero); myPickRoles.push(r.role); sfxPick();
         };
-        const enemyPick = () => {
+        const enemyPick = async () => {
+            this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, 'pick');
+            this._updateBPStatus(main, `${this._enemyTeam.shortName} 正在选人...`);
+            await this._sleep(1500 + Math.random() * 2500);
             const r = this._autoEnemyPick(bpCtx, allBanned(), allPicked(), enemyPickRoles, roles);
-            picks.enemy.push(r.hero); enemyPickRoles.push(r.role);
+            picks.enemy.push(r.hero); enemyPickRoles.push(r.role); sfxPick();
         };
         const refresh = (phase) => {
             this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, phase);
         };
 
-        await myBan('蓝方Ban — 第1个'); refresh('ban'); await this._sleep(200);
-        enemyBan(); refresh('ban'); await this._sleep(300);
-        await myBan('蓝方Ban — 第2个'); refresh('ban'); await this._sleep(200);
-        enemyBan(); refresh('ban'); await this._sleep(300);
+        // ---- 第1段：蓝Ban1 → 红Ban1 → 蓝Ban2 → 红Ban2 ----
+        await myBan('蓝方Ban — 第1个'); refresh('ban');
+        await enemyBan(); refresh('ban');
+        await myBan('蓝方Ban — 第2个'); refresh('ban');
+        await enemyBan(); refresh('ban');
         await this._comment(`第一轮Ban完成 — 蓝禁:${banned.my.join('/')} 红禁:${banned.enemy.join('/')}`);
 
-        await myPick(`${this._myTeam.shortName} 选择第1位`); refresh('pick'); await this._sleep(300);
-        enemyPick(); enemyPick(); refresh('pick'); await this._sleep(400);
-        await myPick(`${this._myTeam.shortName} 选择第2位`); refresh('pick'); await this._sleep(200);
-        await myPick(`${this._myTeam.shortName} 选择第3位`); refresh('pick'); await this._sleep(300);
-        enemyPick(); refresh('pick'); await this._sleep(300);
+        // ---- 第2段：蓝Pick1 → 红Pick1/2 → 蓝Pick2/3 → 红Pick3 ----
+        await myPick(`${this._myTeam.shortName} 选择第1位`); refresh('pick');
+        await enemyPick(); refresh('pick');
+        await enemyPick(); refresh('pick');
+        await myPick(`${this._myTeam.shortName} 选择第2位`); refresh('pick');
+        await myPick(`${this._myTeam.shortName} 选择第3位`); refresh('pick');
+        await enemyPick(); refresh('pick');
         await this._comment('第一轮Pick完成');
 
-        enemyBan(); refresh('ban'); await this._sleep(300);
-        await myBan('蓝方追加Ban — 第3个'); refresh('ban'); await this._sleep(200);
-        enemyBan(); refresh('ban'); await this._sleep(300);
-        await myBan('蓝方追加Ban — 第4个'); refresh('ban'); await this._sleep(200);
-        enemyBan(); refresh('ban'); await this._sleep(200);
+        // ---- 第3段：红Ban3 → 蓝Ban3 → 红Ban4 → 蓝Ban4 → 红Ban5 → 蓝Ban5 ----
+        await enemyBan(); refresh('ban');
+        await myBan('蓝方Ban — 第3个'); refresh('ban');
+        await enemyBan(); refresh('ban');
+        await myBan('蓝方Ban — 第4个'); refresh('ban');
+        await enemyBan(); refresh('ban');
+        await myBan('蓝方Ban — 第5个'); refresh('ban');
         await this._comment(`第二轮Ban完成 — 共禁用${allBanned().length}位英雄`);
 
-        enemyPick(); refresh('pick'); await this._sleep(300);
-        await myPick(`${this._myTeam.shortName} 选择第4位`); refresh('pick'); await this._sleep(200);
-        await myPick(`${this._myTeam.shortName} 选择第5位`); refresh('pick'); await this._sleep(300);
-        enemyPick(); refresh('pick'); await this._sleep(300);
+        // ---- 第4段：红Pick4 → 蓝Pick4/5 → 红Pick5 ----
+        await enemyPick(); refresh('pick');
+        await myPick(`${this._myTeam.shortName} 选择第4位`); refresh('pick');
+        await myPick(`${this._myTeam.shortName} 选择第5位`); refresh('pick');
+        await enemyPick(); refresh('pick');
 
         const bpResult = this._battleSystem.resolveBP(banned.my, picks.my, banned.enemy, picks.enemy);
         this._bpResult = bpResult;
@@ -285,6 +299,7 @@ export class BattleScene {
                                 ${cbs.getCoachAdvice().map(t => `<div class="cb-coach__tip">${t}</div>`).join('')}
                             </div>
                         </div>
+                        <div class="cb-coach-llm" id="cb-coach-llm" style="display:none"></div>
                     </div>
                     <div class="cb-right">
                         ${renderEnemyCards(cbs.enemyHand.length, cbs.revealedEnemyCards)}
@@ -301,6 +316,8 @@ export class BattleScene {
         };
 
         render();
+
+        this._loadLLMCoachAdvice(cbs, main);
 
         // 等待玩家确认出牌
         const playedCards = await new Promise(resolve => {
@@ -324,6 +341,19 @@ export class BattleScene {
 
         // 显示结算动画
         await this._showRoundResult(result);
+    }
+
+    _loadLLMCoachAdvice(cbs, main) {
+        cbs.getCoachAdviceAsync().then(result => {
+            if (result.type !== 'llm') return;
+            const llmEl = main.querySelector('#cb-coach-llm');
+            if (!llmEl) return;
+            llmEl.style.display = 'block';
+            llmEl.innerHTML = `
+                <div class="cb-coach-llm__header">🧠 AI大模型分析</div>
+                <div class="cb-coach-llm__body">${result.content.replace(/\n/g, '<br>')}</div>
+            `;
+        }).catch(() => {});
     }
 
     _bindCardInteractions(main, cbs, commandSlots, currentAP, reRender) {
@@ -668,17 +698,17 @@ export class BattleScene {
                 <div class="bp-board__select" id="bp-select-area"></div>
                 <div class="bp-board__coach" id="bp-coach-panel">
                     <div class="coach-header"><span class="coach-icon">🎙️</span><span class="coach-title">AI 教练</span>
-                        <button class="coach-config-btn" id="coach-config-btn" title="配置AI模型">⚙️</button></div>
+                        <label class="coach-llm-toggle" title="启用/关闭大模型推理"><input type="checkbox" id="coach-llm-switch" ${getCoachConfig().apiKey && getCoachConfig().enableBP !== false ? 'checked' : ''} /><span class="coach-llm-toggle__label">LLM</span></label></div>
                     <div class="coach-content" id="coach-content"><div class="coach-loading">分析中...</div></div>
                 </div>
             </div>
         </div>`;
 
         this._updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase);
-        this._bindCoachConfig();
+        this._bindCoachLLMToggle();
     }
 
-    async _updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase) {
+    async _updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase, stepLabel) {
         const panel = this._container.querySelector('#coach-content');
         if (!panel) return;
         panel.innerHTML = '<div class="coach-loading"><span class="coach-typing"></span> 分析中...</div>';
@@ -688,7 +718,9 @@ export class BattleScene {
             myPickRoles, enemyPickRoles,
             myTeamName: this._myTeam.shortName, enemyTeamName: this._enemyTeam.shortName,
             enemyStarters: this._enemyStarters,
-            stepLabel: this._container.querySelector('#bp-status')?.textContent || '',
+            stepLabel: stepLabel || this._container.querySelector('#bp-status')?.textContent || '',
+            banProgress: `我方已禁${banned.my.length}个，对方已禁${banned.enemy.length}个`,
+            pickProgress: `我方已选${picks.my.length}个(${myPickRoles.join('/')}), 对方已选${picks.enemy.length}个`,
         };
         try {
             const text = await getCoachAnalysis(ctx);
@@ -697,31 +729,31 @@ export class BattleScene {
         } catch { panel.innerHTML = '<div class="coach-error">分析失败</div>'; }
     }
 
-    _bindCoachConfig() {
-        const btn = this._container.querySelector('#coach-config-btn');
-        if (!btn) return;
-        btn.addEventListener('click', () => {
+    _bindCoachLLMToggle() {
+        const sw = this._container.querySelector('#coach-llm-switch');
+        if (!sw) return;
+        const cfg = getCoachConfig();
+        if (!cfg.apiKey) {
+            sw.disabled = true;
+            sw.checked = false;
+            sw.parentElement.title = '请先在游戏设置中配置大模型API';
+        }
+        sw.addEventListener('change', () => {
             const config = getCoachConfig();
+            config.enableBP = sw.checked;
+            saveCoachConfig(config);
             const panel = this._container.querySelector('#coach-content');
-            if (!panel) return;
-            panel.innerHTML = `<div class="coach-config">
-                <p class="coach-config__desc">配置大模型API</p>
-                <label>API 地址</label><input type="text" id="coach-api-url" value="${config.apiUrl || 'https://api.deepseek.com/v1/chat/completions'}"/>
-                <label>API Key</label><input type="password" id="coach-api-key" value="${config.apiKey || ''}" placeholder="sk-..."/>
-                <label>模型</label><input type="text" id="coach-model" value="${config.model || 'deepseek-chat'}"/>
-                <div class="coach-config__actions">
-                    <button class="btn btn--sm" id="coach-save">保存</button>
-                    <button class="btn btn--sm btn--outline" id="coach-cancel">取消</button>
-                </div></div>`;
-            panel.querySelector('#coach-save').addEventListener('click', () => {
-                saveCoachConfig({ apiUrl: panel.querySelector('#coach-api-url').value.trim(), apiKey: panel.querySelector('#coach-api-key').value.trim(), model: panel.querySelector('#coach-model').value.trim() });
-                panel.innerHTML = '<div class="coach-success">✅ 已保存</div>';
-            });
-            panel.querySelector('#coach-cancel').addEventListener('click', () => { panel.innerHTML = '等待操作...'; });
+            if (panel) panel.innerHTML = `<div class="coach-loading">${sw.checked ? '大模型已启用，分析中...' : '已切换为规则引擎模式'}</div>`;
         });
     }
 
-    _updateBPStatus(main, text) { const el = main.querySelector('#bp-status'); if (el) el.textContent = text; }
+    _updateBPStatus(main, text) {
+        const el = main.querySelector('#bp-status');
+        if (!el) return;
+        el.textContent = text;
+        const isThinking = text.includes('正在思考') || text.includes('正在选人');
+        el.classList.toggle('bp-board__step--thinking', isThinking);
+    }
 
     _heroCard(heroName, size = 40, showName = true) {
         const hero = getHero(heroName);
@@ -733,7 +765,7 @@ export class BattleScene {
         </span>`;
     }
 
-    _buildHeroTabsAndGrid(candidates, recSet, enemyPicks, defaultType = 'warrior') {
+    _buildHeroTabsAndGrid(candidates, recMap, enemyPicks, defaultType = 'warrior') {
         const grouped = { warrior: [], mage: [], tank: [], assassin: [], marksman: [], support: [] };
         candidates.forEach(name => { const hero = getHero(name); if (hero && grouped[hero.role]) grouped[hero.role].push(name); });
         const roleOrder = ['warrior', 'mage', 'assassin', 'tank', 'marksman', 'support'];
@@ -745,12 +777,14 @@ export class BattleScene {
             const heroes = grouped[role];
             return `<div class="bp-type-panel ${role === defaultType ? 'bp-type-panel--active' : ''}" data-panel="${role}">
                 ${heroes.length ? heroes.map(name => {
-                    const hero = getHero(name); const isRec = recSet.has(name);
+                    const hero = getHero(name);
+                    const rec = recMap.get(name);
                     const ci = getCounterInfo(name); const countersEnemy = enemyPicks.filter(ep => ci.counters.includes(ep));
-                    return `<button class="bp-hero-btn ${isRec ? 'bp-hero-btn--recommended' : ''}" data-hero="${name}">
+                    const recClass = rec ? (rec.type === 'ban' ? 'bp-hero-btn--rec-ban' : 'bp-hero-btn--rec-pick') : '';
+                    return `<button class="bp-hero-btn ${recClass}" data-hero="${name}">
                         <span class="bp-hero-btn__avatar">${hero ? heroImgHTML(hero.id, name, 56) : ''}</span>
                         <span class="bp-hero-btn__name">${name}</span>
-                        ${isRec ? '<span class="bp-hero-btn__rec">荐</span>' : ''}
+                        ${rec ? `<span class="bp-hero-btn__rec bp-hero-btn__rec--${rec.type}" title="${rec.reason}">${rec.type === 'ban' ? '禁' : '选'}</span>` : ''}
                         ${countersEnemy.length ? `<span class="bp-hero-btn__counter">克${countersEnemy[0]}</span>` : ''}
                     </button>`;
                 }).join('') : '<div class="bp-type-empty">暂无</div>'}
@@ -771,30 +805,48 @@ export class BattleScene {
         container.querySelectorAll('.bp-hero-btn').forEach(btn => { btn.addEventListener('click', () => onHeroClick(btn.dataset.hero)); });
     }
 
-    async _bpSelectHero(main, bpCtx, phase, bannedList, pickedList, picks) {
+    async _bpSelectHero(main, bpCtx, phase, bannedList, pickedList, picks, banned) {
         const selectArea = main.querySelector('#bp-select-area');
         if (!selectArea) return '赵云';
         const unavailable = new Set([...bannedList, ...pickedList]);
         const allHeroNames = Object.keys(HEROES).filter(h => !unavailable.has(h));
         if (!allHeroNames.length) return '赵云';
-        const banRecs = this._battleSystem.getRecommendedBan(this._enemyStarters);
-        const recSet = new Set(banRecs.map(r => r.hero));
-        selectArea.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, recSet, picks.enemy);
+
+        const recs = getStructuredRecommendations({
+            phase: 'ban', myBans: banned?.my || [], enemyBans: banned?.enemy || [],
+            myPicks: picks.my, enemyPicks: picks.enemy, myPickRoles: [],
+            enemyStarters: this._enemyStarters,
+        });
+        const recMap = new Map(recs.map(r => [r.hero, r]));
+
+        selectArea.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, recMap, picks.enemy);
         return new Promise(res => { this._bindHeroTabEvents(selectArea, hero => res(hero)); });
     }
 
-    async _bpPickWithRole(main, bpCtx, bannedList, pickedList, picks, myPickRoles, roles) {
+    async _bpPickWithRole(main, bpCtx, bannedList, pickedList, picks, myPickRoles, roles, banned) {
         const selectArea = main.querySelector('#bp-select-area');
         if (!selectArea) return { hero: '赵云', role: '打野' };
         const unavailable = new Set([...bannedList, ...pickedList]);
         const remainRoles = roles.filter(r => !myPickRoles.includes(r));
         let currentRole = remainRoles[0] || roles[0];
         const allHeroNames = Object.keys(HEROES).filter(h => !unavailable.has(h));
-        const recsForRole = this._battleSystem.getHeroRecommendation(currentRole, bannedList, picks.my, picks.enemy);
-        const recSet = new Set(recsForRole.map(r => r.name));
+
+        const ROLE_TO_TYPE = { '对抗路': 'warrior', '打野': 'assassin', '中路': 'mage', '发育路': 'marksman', '游走': 'support' };
+
+        const _buildRecMap = () => {
+            const recs = getStructuredRecommendations({
+                phase: 'pick', myBans: banned?.my || [], enemyBans: banned?.enemy || [],
+                myPicks: picks.my, enemyPicks: picks.enemy, myPickRoles,
+                enemyStarters: this._enemyStarters,
+            });
+            return new Map(recs.map(r => [r.hero, r]));
+        };
+
+        const _defaultType = () => ROLE_TO_TYPE[currentRole] || 'warrior';
+
         const roleTabsHTML = `<div class="bp-role-tabs"><span class="bp-role-tab-hint">为哪个位置选人？</span>
             ${remainRoles.map((r, i) => `<button class="bp-role-tab ${i===0?'bp-role-tab--active':''}" data-role="${r}">${r}</button>`).join('')}</div>`;
-        selectArea.innerHTML = `${roleTabsHTML}<div id="bp-grid-container">${this._buildHeroTabsAndGrid(allHeroNames, recSet, picks.enemy)}</div>`;
+        selectArea.innerHTML = `${roleTabsHTML}<div id="bp-grid-container">${this._buildHeroTabsAndGrid(allHeroNames, _buildRecMap(), picks.enemy, _defaultType())}</div>`;
         let resolveHero;
         const heroPromise = new Promise(res => { resolveHero = res; });
         const gridContainer = selectArea.querySelector('#bp-grid-container');
@@ -804,8 +856,7 @@ export class BattleScene {
                 selectArea.querySelectorAll('.bp-role-tab').forEach(t => t.classList.remove('bp-role-tab--active'));
                 tab.classList.add('bp-role-tab--active');
                 currentRole = tab.dataset.role;
-                const newRecs = this._battleSystem.getHeroRecommendation(currentRole, bannedList, picks.my, picks.enemy);
-                gridContainer.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, new Set(newRecs.map(r => r.name)), picks.enemy);
+                gridContainer.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, _buildRecMap(), picks.enemy, _defaultType());
                 this._bindHeroTabEvents(gridContainer, hero => resolveHero(hero));
             });
         });

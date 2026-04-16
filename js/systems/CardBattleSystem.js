@@ -4,7 +4,7 @@
  * 管理：牌库/手牌/行动力/地图状态/回合结算/大事件/团战子博弈
  */
 import { ALL_CARDS, buildDeck, buildEnemyDeck, getTeamStyle } from '../data/cards.js';
-/* heroes.js imports reserved for future comp evaluation */
+import { getCoachConfig } from './AICoach.js';
 
 const TOTAL_ROUNDS = 9;
 const MAX_HAND = 6;
@@ -645,6 +645,10 @@ export class CardBattleSystem {
 
     // ===================== AI教练建议 =====================
     getCoachAdvice() {
+        return this._ruleBasedAdvice();
+    }
+
+    _ruleBasedAdvice() {
         const tips = [];
         const dominated = Object.entries(this.lanes).filter(([, l]) => l.progress <= 30);
         const threatened = Object.entries(this.lanes).filter(([, l]) => l.progress >= 70);
@@ -660,11 +664,76 @@ export class CardBattleSystem {
         if (this.momentum < 40) tips.push('🔥 形势不利，注意防守等待机会翻盘');
         if (this.momentum > 60) tips.push('✅ 形势大好，可以果断进攻扩大优势');
 
-        // 推荐出牌
         const bestCard = this._recommendCard();
         if (bestCard) tips.push(`📋 推荐出牌：「${bestCard.name}」— ${bestCard.desc}`);
 
         return tips;
+    }
+
+    async getCoachAdviceAsync() {
+        const config = getCoachConfig();
+        if (config.apiKey && config.apiUrl && config.enableBattle !== false) {
+            try {
+                const llmAdvice = await this._llmBattleAdvice(config);
+                if (llmAdvice) return { type: 'llm', content: llmAdvice };
+            } catch (e) {
+                console.warn('[CardBattle] LLM coach fallback:', e);
+            }
+        }
+        return { type: 'rule', content: this._ruleBasedAdvice() };
+    }
+
+    async _llmBattleAdvice(config) {
+        const stateDesc = this._buildBattleStateDesc();
+        const resp = await fetch(config.apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${config.apiKey}`,
+            },
+            body: JSON.stringify({
+                model: config.model || 'deepseek-chat',
+                messages: [
+                    { role: 'system', content: `你是一名王者荣耀KPL职业赛事的AI教练，正在指导玩家进行一场卡牌策略对战。
+你的任务是根据当前战场局势，用简洁有力的口语给出具体出牌建议。
+要求：
+1. 分析当前三路及野区局势，哪路有优势/劣势
+2. 根据手牌推荐最佳出牌（说出卡牌名称），解释为什么
+3. 如果有野区目标（暴君/主宰）可争夺，要提醒
+4. 用KPL教练的语气，简短有力，3-5句话
+5. 不要使用markdown格式` },
+                    { role: 'user', content: stateDesc },
+                ],
+                max_tokens: 300,
+                temperature: 0.7,
+            }),
+        });
+        if (!resp.ok) throw new Error(`API ${resp.status}`);
+        const data = await resp.json();
+        return data.choices?.[0]?.message?.content || null;
+    }
+
+    _buildBattleStateDesc() {
+        const lines = [];
+        lines.push(`第${this.round}轮（${this.getPhaseLabel()}期） | 势能：${this.momentum}/100 ${this.momentum > 55 ? '(我方优势)' : this.momentum < 45 ? '(对方优势)' : '(均势)'}`);
+        lines.push(`我方${this.my.team.name} vs ${this.enemy.team.name}`);
+        lines.push(`击杀 ${this.kills.my}:${this.kills.enemy} | 推塔 ${this.towers.my}:${this.towers.enemy}`);
+
+        for (const [lane, data] of Object.entries(this.lanes)) {
+            const label = LANES_LABEL[lane] || lane;
+            const status = data.progress < 40 ? '我方优势' : data.progress > 60 ? '对方优势' : '均势';
+            lines.push(`${label}：进度${data.progress}/100(${status})，我方塔${data.myTowers}座，敌方塔${data.enemyTowers}座`);
+        }
+
+        if (this.baronAlive) lines.push('暴君已刷新，可争夺');
+        if (this.lordAlive) lines.push('主宰已刷新，可争夺');
+        if (this.baronBuff.my) lines.push('我方持有暴君buff');
+        if (this.lordBuff.my) lines.push('我方持有主宰buff');
+
+        lines.push(`当前行动力：${this.currentAP}`);
+        lines.push(`手牌：${this.myHand.map(c => `「${c.name}」(${c.type},费用${c.cost},威力${c.power})`).join('、')}`);
+
+        return lines.join('\n');
     }
 
     _recommendCard() {

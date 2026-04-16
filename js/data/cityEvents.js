@@ -83,6 +83,27 @@ export const GENERIC_EVENTS = [
     { text: '在公园做了一小时冥想训练', effect: { type: 'stat', stat: '心态', value: 2 }, icon: '🧘', flavor: '心态稳了，比赛就稳了' },
 ];
 
+export const SEASON_EVENTS = {
+    pre_match: [
+        { text: '赛前在客场城市地标前默念口号，全队士气高涨', effect: { type: 'morale', value: 12 }, icon: '🔥', flavor: '"今天，这座城市为我们而来！"' },
+        { text: '在比赛场馆附近散步，感受赛事氛围，进入状态', effect: { type: 'stat', stat: '心态', value: 2 }, icon: '🏟️', flavor: '灯光已亮，观众入场，一切准备就绪' },
+        { text: '赛前在城市街头被当地粉丝认出，收到了热情的加油', effect: { type: 'fans', value: 200 }, icon: '📸', flavor: '"加油啊！今晚一定要赢！"' },
+        { text: '参观了当地的电竞主题咖啡厅，和粉丝聊了聊战术', effect: { type: 'stat', stat: '意识', value: 1 }, icon: '☕', flavor: '粉丝的分析意外地有见地' },
+    ],
+    post_win: [
+        { text: '赛后在城市街头庆祝胜利，路人纷纷鼓掌', effect: { type: 'fame', value: 150 }, icon: '🎉', flavor: '胜利的喜悦感染了整条街' },
+        { text: '赢下比赛后全队去庆功宴，品尝当地美食', effect: { type: 'recovery', value: 20 }, icon: '🍽️', flavor: '"赢了就要好好犒劳自己！"' },
+        { text: '胜利后接受了当地媒体采访，曝光度大增', effect: { type: 'fame', value: 200 }, icon: '🎤', flavor: '明天的头条属于你们' },
+        { text: '赛后粉丝团组织庆祝活动，战队人气暴涨', effect: { type: 'fans', value: 500 }, icon: '🎊', flavor: '应援横幅铺满了整个广场' },
+    ],
+    post_lose: [
+        { text: '赛后在城市河边散步反思，总结了比赛中的失误', effect: { type: 'stat', stat: '意识', value: 2 }, icon: '🌊', flavor: '失败是最好的老师，但学费不便宜' },
+        { text: '输了比赛，队员们在酒店安静地复盘到深夜', effect: { type: 'stat', stat: '配合', value: 1 }, icon: '🌙', flavor: '"下次不会再犯同样的错误"' },
+        { text: '赛后教练带全队去做放松训练，调整心态', effect: { type: 'recovery', value: 15 }, icon: '🧘', flavor: '输一场不要紧，要紧的是别输心态' },
+        { text: '虽然输了比赛，但热心粉丝的安慰让队员们重燃斗志', effect: { type: 'morale', value: 10 }, icon: '💌', flavor: '"我们永远支持你们！"' },
+    ],
+};
+
 export function getCityEvents(cityName) {
     return CITY_EVENTS[cityName] || [];
 }
@@ -90,5 +111,11 @@ export function getCityEvents(cityName) {
 export function getRandomEvent(cityName) {
     const citySpecific = CITY_EVENTS[cityName] || [];
     const pool = [...citySpecific, ...citySpecific, ...GENERIC_EVENTS];
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
+export function getSeasonEvent(phase) {
+    const pool = SEASON_EVENTS[phase];
+    if (!pool?.length) return null;
     return pool[Math.floor(Math.random() * pool.length)];
 }

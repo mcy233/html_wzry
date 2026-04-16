@@ -54,6 +54,7 @@ export class HomeScene {
             { icon: '📋', label: '赛程总览', desc: '查看赛季排名与赛程', action: () => game.sceneManager.switchTo('season') },
             { icon: '🏋️', label: '训练基地', desc: '提升选手能力',   action: () => game.sceneManager.switchTo('training') },
             { icon: '🏙️', label: '城市探索', desc: `探索${team.city}的魅力`, action: () => game.sceneManager.switchTo('explore', { city: team.city }) },
+            { icon: '🗂️', label: '文旅图鉴', desc: '收集城市明信片',  action: () => game.sceneManager.switchTo('postcards') },
             { icon: '👥', label: '阵容管理', desc: '调整首发与替补',  action: () => game.sceneManager.switchTo('roster') },
             { icon: '💾', label: '保存游戏', desc: '保存当前进度',    action: () => { game.save(); showToast('存档成功！'); } },
         ];

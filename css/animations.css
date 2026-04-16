@@ -33,3 +33,24 @@
 .animate-scale-in { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-glow { animation: glowPulse 2s ease infinite; }
 .animate-float { animation: float 3s ease infinite; }
+
+/* ── 场景切换过渡遮罩 ── */
+.scene-transition-overlay {
+    position: fixed; inset: 0; z-index: 8000;
+    background: rgba(10,14,23,0.85);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.scene-transition-overlay--active { opacity: 1; pointer-events: auto; }
+.scene-transition-overlay--out { opacity: 0; pointer-events: none; }
+
+.scene-transition-spinner {
+    width: 28px; height: 28px;
+    border: 3px solid rgba(78,168,222,0.15);
+    border-top-color: #4ea8de;
+    border-radius: 50%;
+    animation: scene-spin 0.7s linear infinite;
+}
+@keyframes scene-spin { to { transform: rotate(360deg); } }

@@ -58,6 +58,23 @@ export const MORALE = {
     BOOST_PER_WIN: 8,
 };
 
+/* ===== 城市声望系统 ===== */
+export const REPUTATION = {
+    LEVELS: [
+        { stars: 1, required: 0,    label: '初来乍到', unlocks: '基础地标可探索' },
+        { stars: 2, required: 100,  label: '常客', unlocks: 'NPC互动 + 新地标' },
+        { stars: 3, required: 300,  label: '熟客', unlocks: '隐藏事件 + 折扣' },
+        { stars: 4, required: 600,  label: '知音', unlocks: '城市专属道具' },
+        { stars: 5, required: 1000, label: '荣誉市民', unlocks: '永久加成 + 称号' },
+    ],
+    GAIN_EXPLORE_LANDMARK: 20,
+    GAIN_COMPLETE_ROUTE_NODE: 30,
+    GAIN_COMPLETE_FULL_ROUTE: 100,
+    GAIN_FOOD_TASTED: 15,
+    GAIN_QUIZ_CORRECT: 10,
+    GAIN_NPC_MET: 25,
+};
+
 /* ===== 比赛系统 ===== */
 export const BATTLE = {
     MOMENTUM_START: 50,

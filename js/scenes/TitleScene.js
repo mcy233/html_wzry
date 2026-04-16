@@ -15,15 +15,13 @@ export class TitleScene {
             </div>
             <div class="title-content">
                 <div class="title-logo">
-                    <div class="title-logo__sub">KPL 2027</div>
+                    <div class="title-logo__sub">— KPL 2027 —</div>
                     <h1 class="title-logo__main">城市荣耀</h1>
                     <div class="title-logo__tagline">KPL传奇之路</div>
                 </div>
                 <div class="title-menu" id="title-menu"></div>
-                <div class="title-footer">
-                    <span>基于王者荣耀电竞IP · 由腾讯AI工具辅助开发</span>
-                </div>
             </div>
+            <div class="title-footer">基于王者荣耀电竞IP · 由腾讯AI工具辅助开发</div>
         `;
 
         const menu = container.querySelector('#title-menu');
@@ -33,6 +31,7 @@ export class TitleScene {
         }
         menu.appendChild(createButton('新的赛季', () => this._newGame(), 'btn btn--gold btn--large'));
         menu.appendChild(createButton('新手引导', () => this._showTutorial(), 'btn btn--outline btn--large'));
+        menu.appendChild(createButton('游戏设置', () => this._openSettings(), 'btn btn--outline btn--large'));
         menu.appendChild(createButton('游戏说明', () => this._showHelp(container), 'btn btn--outline btn--large'));
 
         const buttons = menu.querySelectorAll('.btn');
@@ -62,6 +61,10 @@ export class TitleScene {
     _showTutorial() {
         const tut = new Tutorial();
         tut.show(() => {});
+    }
+
+    _openSettings() {
+        game.sceneManager.switchTo('settings');
     }
 
     _showHelp(container) {

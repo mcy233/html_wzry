@@ -246,24 +246,51 @@ export class TrainingScene {
         const pairs = ['🗡️','🛡️','🏹','🔮','🎯','⚡','💎','🔥'];
         const shuffled = [...pairs, ...pairs].sort(() => Math.random() - 0.5);
         let flipped = [], matched = 0, total = pairs.length;
+        let timeLeft = 30, finished = false;
 
         c.innerHTML = `
             <div class="minigame">
                 <div class="minigame__hud">
                     <span>配对: <strong id="mg-score">0</strong> / ${total}</span>
+                    <span>时间: <strong id="mg-time" style="color:var(--color-gold)">${timeLeft}</strong>s</span>
+                </div>
+                <div class="mg-timer-bar" style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,0.1);margin-bottom:8px;overflow:hidden;">
+                    <div id="mg-timer-fill" style="width:100%;height:100%;border-radius:3px;background:linear-gradient(90deg,#2a9d8f,#3ecf8e);transition:width 1s linear;"></div>
                 </div>
                 <div class="match-grid" id="match-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:320px;margin:16px auto;">
                     ${shuffled.map((v, i) => `<button class="match-cell" data-idx="${i}" data-val="${v}" style="aspect-ratio:1;border-radius:var(--radius);background:var(--color-surface);border:2px solid var(--color-surface-light);font-size:24px;cursor:pointer;transition:all 0.3s;color:var(--color-text);font-family:var(--font-main);">?</button>`).join('')}
                 </div>
-                <p class="minigame__hint">翻开两张相同的卡片完成配对！</p>
+                <p class="minigame__hint">在 ${timeLeft} 秒内尽可能多地完成配对！</p>
             </div>`;
 
         const cells = [...c.querySelectorAll('.match-cell')];
         const scoreEl = c.querySelector('#mg-score');
+        const timeEl = c.querySelector('#mg-time');
+        const timerFill = c.querySelector('#mg-timer-fill');
+        const maxTime = timeLeft;
+
+        const endGame = () => {
+            if (finished) return;
+            finished = true;
+            clearInterval(timer);
+            cells.forEach(cell => { cell.style.pointerEvents = 'none'; });
+            this._showTrainingResult(item, matched, total);
+        };
+
+        const timer = setInterval(() => {
+            timeLeft--;
+            timeEl.textContent = timeLeft;
+            timerFill.style.width = `${(timeLeft / maxTime) * 100}%`;
+            if (timeLeft <= 5) {
+                timeEl.style.color = 'var(--color-danger)';
+                timerFill.style.background = 'linear-gradient(90deg, #e76f51, #f4a261)';
+            }
+            if (timeLeft <= 0) endGame();
+        }, 1000);
 
         cells.forEach(cell => {
             cell.addEventListener('click', () => {
-                if (flipped.length >= 2 || cell.dataset.done || flipped.includes(cell)) return;
+                if (finished || flipped.length >= 2 || cell.dataset.done || flipped.includes(cell)) return;
                 cell.textContent = cell.dataset.val;
                 cell.style.background = 'var(--color-surface-light)';
                 flipped.push(cell);
@@ -275,9 +302,10 @@ export class TrainingScene {
                         matched++;
                         scoreEl.textContent = matched;
                         flipped = [];
-                        if (matched >= total) this._showTrainingResult(item, total, total);
+                        if (matched >= total) endGame();
                     } else {
                         setTimeout(() => {
+                            if (finished) return;
                             a.textContent = '?'; a.style.background = 'var(--color-surface)';
                             b.textContent = '?'; b.style.background = 'var(--color-surface)';
                             flipped = [];
