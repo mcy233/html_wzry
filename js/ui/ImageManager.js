@@ -8,6 +8,7 @@
  */
 import { generateTeamLogo, generatePlayerAvatar } from './TeamLogos.js';
 import { getTeamLogoPath, getPlayerAvatarPath } from '../data/wanplusAssets.js';
+import { getPlayerHDAvatarPath } from '../data/playerAvatarsByTeam.js';
 
 /**
  * 获取战队logo HTML
@@ -32,7 +33,8 @@ export function teamLogoHTML(teamId, team, size = 64) {
  * 优先匹配wanplus选手头像，失败回退SVG
  */
 export function playerAvatarHTML(player, teamColor, size = 48) {
-    const realPath = getPlayerAvatarPath(player.id);
+    const hdPath = getPlayerHDAvatarPath(player.id);
+    const realPath = hdPath || getPlayerAvatarPath(player.id);
     const svgFallback = generatePlayerAvatar(player, teamColor, size);
     if (!realPath) {
         return `<span class="img-wrapper img-wrapper--player" style="width:${size}px;height:${size}px">${svgFallback}</span>`;
