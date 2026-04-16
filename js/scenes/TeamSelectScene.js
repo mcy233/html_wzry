@@ -1,6 +1,6 @@
 /**
  * TeamSelectScene - 战队选择场景
- * 风格化中国地图 + 战队Logo展示
+ * 真实中国地图 + SVG 内嵌战队标记（共享 viewBox 坐标系，分辨率无关）
  */
 import { game } from '../core/GameEngine.js';
 import { eventBus } from '../core/EventBus.js';
@@ -8,7 +8,7 @@ import { TEAMS, getStartersByTeamId } from '../data/teams.js';
 import { createElement, createButton, createStatRadar } from '../ui/Components.js';
 import { slideUpTransition } from '../ui/Transitions.js';
 import { teamLogoHTML, playerAvatarHTML } from '../ui/ImageManager.js';
-import { createChinaMapSVG } from '../ui/ChinaMap.js';
+import { loadChinaMapWithTeams } from '../ui/ChinaMap.js';
 
 export class TeamSelectScene {
     constructor() { this._selectedTeam = null; this._container = null; }
@@ -25,9 +25,7 @@ export class TeamSelectScene {
                 </header>
                 <div class="team-select__body">
                     <div class="map-container" id="map-container">
-                        <div class="china-map" id="china-map">
-                            ${createChinaMapSVG()}
-                        </div>
+                        <div class="china-map" id="china-map"></div>
                     </div>
                     <div class="team-detail-panel" id="team-detail">
                         <div class="team-detail__placeholder">
@@ -38,26 +36,38 @@ export class TeamSelectScene {
                 </div>
             </div>`;
         container.querySelector('#btn-back').addEventListener('click', () => game.sceneManager.switchTo('title'));
-        this._renderMapPoints();
+        await this._loadMap();
     }
 
     exit() { this._selectedTeam = null; this._container = null; }
 
-    _renderMapPoints() {
+    async _loadMap() {
         const mapEl = this._container.querySelector('#china-map');
-        TEAMS.forEach(team => {
-            const dot = createElement('button', 'map-dot');
-            dot.style.left = team.mapPosition.x + '%';
-            dot.style.top = team.mapPosition.y + '%';
-            dot.style.setProperty('--team-color', team.color);
-            dot.title = team.name;
-            dot.innerHTML = `<span class="map-dot__pulse"></span><span class="map-dot__label">${team.shortName}</span>`;
-            dot.addEventListener('click', () => {
-                this._container.querySelectorAll('.map-dot--active').forEach(d => d.classList.remove('map-dot--active'));
-                dot.classList.add('map-dot--active');
+        try {
+            const svg = await loadChinaMapWithTeams(TEAMS);
+            mapEl.appendChild(svg);
+            this._bindMarkerEvents(svg);
+        } catch (e) {
+            console.error('Failed to load map:', e);
+            mapEl.innerHTML = '<p style="color:#666;text-align:center;padding:40px">地图加载失败</p>';
+        }
+    }
+
+    _bindMarkerEvents(svg) {
+        const markers = svg.querySelectorAll('.map-team-marker');
+        markers.forEach(marker => {
+            const teamId = marker.getAttribute('data-team-id');
+            const team = TEAMS.find(t => t.id === teamId);
+            if (!team) return;
+
+            marker.addEventListener('click', (e) => {
+                e.stopPropagation();
+                svg.querySelectorAll('.map-team-marker--active').forEach(m =>
+                    m.classList.remove('map-team-marker--active')
+                );
+                marker.classList.add('map-team-marker--active');
                 this._showTeamDetail(team);
             });
-            mapEl.appendChild(dot);
         });
     }
 
