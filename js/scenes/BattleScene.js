@@ -286,13 +286,13 @@ export class BattleScene {
         if (el) el.textContent = text;
     }
 
-    _heroCard(heroName, size = 40) {
+    _heroCard(heroName, size = 40, showName = true) {
         const hero = getHero(heroName);
         if (!hero) return `<span class="bp-hero-mini">${heroName}</span>`;
         const roleInfo = HERO_ROLES[hero.role];
         return `<span class="bp-hero-card" title="${heroName} - ${roleInfo?.name || ''}">
             ${heroImgHTML(hero.id, heroName, size)}
-            <span class="bp-hero-card__name">${heroName}</span>
+            ${showName ? `<span class="bp-hero-card__name">${heroName}</span>` : ''}
         </span>`;
     }
 
@@ -322,12 +322,10 @@ export class BattleScene {
                     const ci = getCounterInfo(name);
                     const countersEnemy = enemyPicks.filter(ep => ci.counters.includes(ep));
                     return `<button class="bp-hero-btn ${isRec ? 'bp-hero-btn--recommended' : ''}" data-hero="${name}">
-                        ${hero ? heroImgHTML(hero.id, name, 36) : ''}
-                        <span class="bp-hero-btn__info">
-                            <span class="bp-hero-btn__name">${name}</span>
-                        </span>
+                        <span class="bp-hero-btn__avatar">${hero ? heroImgHTML(hero.id, name, 56) : ''}</span>
+                        <span class="bp-hero-btn__name">${name}</span>
                         ${isRec ? '<span class="bp-hero-btn__rec">荐</span>' : ''}
-                        ${countersEnemy.length ? `<span class="bp-hero-btn__counter">克${countersEnemy.join(',')}</span>` : ''}
+                        ${countersEnemy.length ? `<span class="bp-hero-btn__counter">克${countersEnemy[0]}</span>` : ''}
                     </button>`;
                 }).join('') : '<div class="bp-type-empty">该分类暂无可选英雄</div>'}
             </div>`;
