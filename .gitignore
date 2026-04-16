@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Temp files
+*.tmp
+*.bak
+tools/wanplus_page.html
+tools/wanplus_rank.js
+tools/team_detail_sample.html
+tools/match_result.txt

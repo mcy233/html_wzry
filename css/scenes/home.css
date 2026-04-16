@@ -1,0 +1,42 @@
+/* home.css - 主基地界面 */
+.scene--home { background: var(--color-bg); }
+.home { padding-bottom: 20px; }
+.home__header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; flex-wrap: wrap; gap: 12px;
+    background: linear-gradient(135deg, var(--color-bg-light), var(--color-surface));
+    border-bottom: 2px solid var(--team-color, var(--color-gold));
+}
+.home__team-info { display: flex; align-items: center; gap: 12px; }
+.home__team-badge {
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.home__team-badge svg { width: 48px; height: 48px; }
+.home__team-name { font-size: 20px; font-weight: 800; }
+.home__city { font-size: 12px; color: var(--color-text-dim); }
+
+.home__stats { display: flex; gap: 16px; }
+.home__stat { text-align: center; }
+.home__stat-label { display: block; font-size: 10px; color: var(--color-text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.home__stat-value { display: block; font-size: 18px; font-weight: 800; color: var(--color-gold); }
+
+.home__season-bar {
+    display: flex; justify-content: space-between;
+    padding: 10px 20px; background: var(--color-surface);
+    font-size: 13px; color: var(--color-text-dim);
+    border-bottom: 1px solid var(--color-surface-light);
+}
+
+.home__menu {
+    display: grid; grid-template-columns: 1fr; gap: 8px;
+    padding: 16px 20px;
+}
+@media (min-width: 600px) { .home__menu { grid-template-columns: 1fr 1fr; } }
+
+.home__roster { padding: 0 20px; }
+.roster-title { font-size: 16px; margin-bottom: 12px; color: var(--color-text-dim); }
+.roster-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px;
+}

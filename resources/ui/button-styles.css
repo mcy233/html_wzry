@@ -1,0 +1,137 @@
+/* 游戏UI按钮样式 */
+
+/* 基础按钮 */
+.game-btn {
+  display: inline-block;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  text-decoration: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 主按钮 - 金色 */
+.game-btn-primary {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: #1a1a2e;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.game-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+}
+
+.game-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* 次要按钮 - 蓝色 */
+.game-btn-secondary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.game-btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+/* 危险按钮 - 红色 */
+.game-btn-danger {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+}
+
+/* 禁用按钮 */
+.game-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* 卡片样式 */
+.game-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #FFD700;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* 面板样式 */
+.game-panel {
+  background: rgba(26, 26, 46, 0.95);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
+}
+
+/* 进度条 */
+.game-progress {
+  width: 100%;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.game-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}
+
+/* 势能条 */
+.momentum-bar {
+  width: 100%;
+  height: 30px;
+  background: linear-gradient(90deg, #e74c3c 0%, #fff 50%, #3498db 100%);
+  border-radius: 15px;
+  position: relative;
+  overflow: hidden;
+}
+
+.momentum-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  transition: left 0.5s ease;
+}
+
+/* 文字样式 */
+.game-title {
+  font-size: 32px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.game-text {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.game-text-secondary {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}

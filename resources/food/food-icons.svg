@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- 美食图标集合 -->
+  
+  <!-- 北京烤鸭 -->
+  <g transform="translate(20, 20)">
+    <rect width="80" height="80" rx="10" fill="#8B4513"/>
+    <circle cx="40" cy="40" r="25" fill="#D2691E"/>
+    <text x="40" y="75" font-size="10" fill="#fff" text-anchor="middle">烤鸭</text>
+  </g>
+  
+  <!-- 火锅 -->
+  <g transform="translate(120, 20)">
+    <rect width="80" height="80" rx="10" fill="#DC143C"/>
+    <circle cx="40" cy="35" r="20" fill="#FF6347"/>
+    <text x="40" y="45" font-size="20" text-anchor="middle">🔥</text>
+    <text x="40" y="75" font-size="10" fill="#fff" text-anchor="middle">火锅</text>
+  </g>
+  
+  <!-- 炸酱面 -->
+  <g transform="translate(220, 20)">
+    <rect width="80" height="80" rx="10" fill="#F5DEB3"/>
+    <ellipse cx="40" cy="40" rx="30" ry="20" fill="#FFE4B5"/>
+    <text x="40" y="45" font-size="16" text-anchor="middle">🍜</text>
+    <text x="40" y="75" font-size="10" fill="#333" text-anchor="middle">炸酱面</text>
+  </g>
+  
+  <!-- 冰糖葫芦 -->
+  <g transform="translate(320, 20)">
+    <rect width="80" height="80" rx="10" fill="#FFB6C1"/>
+    <circle cx="40" cy="35" r="15" fill="#DC143C"/>
+    <line x1="40" y1="20" x2="40" y2="55" stroke="#8B4513" stroke-width="3"/>
+    <text x="40" y="75" font-size="10" fill="#333" text-anchor="middle">糖葫芦</text>
+  </g>
+  
+  <!-- 串串香 -->
+  <g transform="translate(20, 120)">
+    <rect width="80" height="80" rx="10" fill="#8B0000"/>
+    <line x1="30" y1="25" x2="30" y2="55" stroke="#D2691E" stroke-width="4"/>
+    <line x1="50" y1="25" x2="50" y2="55" stroke="#D2691E" stroke-width="4"/>
+    <circle cx="30" cy="30" r="5" fill="#FF6347"/>
+    <circle cx="50" cy="35" r="5" fill="#FF6347"/>
+    <text x="40" y="75" font-size="10" fill="#fff" text-anchor="middle">串串</text>
+  </g>
+  
+  <!-- 重庆小面 -->
+  <g transform="translate(120, 120)">
+    <rect width="80" height="80" rx="10" fill="#FF4500"/>
+    <ellipse cx="40" cy="40" rx="30" ry="18" fill="#FFD700"/>
+    <text x="40" y="45" font-size="16" text-anchor="middle">🌶</text>
+    <text x="40" y="75" font-size="10" fill="#fff" text-anchor="middle">小面</text>
+  </g>
+  
+  <!-- 酸辣粉 -->
+  <g transform="translate(220, 120)">
+    <rect width="80" height="80" rx="10" fill="#FF1493"/>
+    <ellipse cx="40" cy="40" rx="28" ry="20" fill="#FFB6C1"/>
+    <text x="40" y="45" font-size="14" text-anchor="middle">🍜</text>
+    <text x="40" y="75" font-size="10" fill="#fff" text-anchor="middle">酸辣粉</text>
+  </g>
+  
+  <!-- 肉夹馍 -->
+  <g transform="translate(320, 120)">
+    <rect width="80" height="80" rx="10" fill="#DAA520"/>
+    <ellipse cx="40" cy="40" rx="25" ry="18" fill="#F4A460"/>
+    <text x="40" y="45" font-size="14" text-anchor="middle">🥙</text>
+    <text x="40" y="75" font-size="10" fill="#333" text-anchor="middle">肉夹馍</text>
+  </g>
+  
+  <!-- 热干面 -->
+  <g transform="translate(20, 220)">
+    <rect width="80" height="80" rx="10" fill="#DEB887"/>
+    <ellipse cx="40" cy="40" rx="28" ry="20" fill="#F5DEB3"/>
+    <text x="40" y="45" font-size="16" text-anchor="middle">🍝</text>
+    <text x="40" y="75" font-size="10" fill="#333" text-anchor="middle">热干面</text>
+  </g>
+  
+  <!-- 臭豆腐 -->
+  <g transform="translate(120, 220)">
+    <rect width="80" height="80" rx="10" fill="#2F4F4F"/>
+    <rect x="25" y="30" width="30" height="25" rx="3" fill="#1C1C1C"/>
+    <text x="40" y="75" font-size="10" fill="#fff" text-anchor="middle">臭豆腐</text>
+  </g>
+  
+  <!-- 早茶 -->
+  <g transform="translate(220, 220)">
+    <rect width="80" height="80" rx="10" fill="#FFE4E1"/>
+    <circle cx="40" cy="35" r="15" fill="#F5F5DC" stroke="#D2691E" stroke-width="2"/>
+    <text x="40" y="40" font-size="12" text-anchor="middle">茶</text>
+    <text x="40" y="75" font-size="10" fill="#333" text-anchor="middle">早茶</text>
+  </g>
+  
+  <!-- 西湖醋鱼 -->
+  <g transform="translate(320, 220)">
+    <rect width="80" height="80" rx="10" fill="#4682B4"/>
+    <ellipse cx="40" cy="40" rx="28" ry="15" fill="#87CEEB"/>
+    <text x="40" y="45" font-size="14" text-anchor="middle">🐟</text>
+    <text x="40" y="75" font-size="9" fill="#fff" text-anchor="middle">西湖醋鱼</text>
+  </g>
+  
+  <!-- 羊肉泡馍 -->
+  <g transform="translate(20, 320)">
+    <rect width="80" height="80" rx="10" fill="#CD853F"/>
+    <ellipse cx="40" cy="40" rx="28" ry="20" fill="#F5DEB3"/>
+    <text x="40" y="45" font-size="14" text-anchor="middle">🍲</text>
+    <text x="40" y="75" font-size="9" fill="#333" text-anchor="middle">羊肉泡馍</text>
+  </g>
+  
+  <!-- 占位符 -->
+  <g transform="translate(120, 320)">
+    <rect width="80" height="80" rx="10" fill="#ddd"/>
+    <text x="40" y="45" font-size="24" text-anchor="middle">🍽</text>
+    <text x="40" y="75" font-size="10" fill="#333" text-anchor="middle">美食</text>
+  </g>
+</svg>

@@ -1,0 +1,48 @@
+/* title.css - 标题画面 */
+.scene--title {
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #0f1929 0%, #060a12 100%);
+    overflow: hidden;
+}
+.title-bg { position: absolute; inset: 0; pointer-events: none; }
+.title-particles { position: absolute; inset: 0; overflow: hidden; }
+.particle {
+    position: absolute; bottom: -10px;
+    background: var(--color-gold); border-radius: 50%;
+    animation: particleRise linear forwards;
+    pointer-events: none;
+}
+@keyframes particleRise {
+    from { transform: translateY(0) scale(1); opacity: var(--opacity, 0.5); }
+    to { transform: translateY(-100vh) scale(0); opacity: 0; }
+}
+.title-content {
+    position: relative; z-index: 1; text-align: center; padding: 20px;
+}
+.title-logo { margin-bottom: 48px; }
+.title-logo__sub {
+    font-size: 16px; letter-spacing: 6px; color: var(--color-gold);
+    text-transform: uppercase; margin-bottom: 8px;
+}
+.title-logo__main {
+    font-size: clamp(40px, 8vw, 64px); font-weight: 900;
+    background: linear-gradient(135deg, var(--color-gold), #fff, var(--color-gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none; line-height: 1.2;
+    animation: titleGlow 3s ease-in-out infinite alternate;
+}
+@keyframes titleGlow {
+    from { filter: drop-shadow(0 0 10px rgba(240,192,64,0.3)); }
+    to { filter: drop-shadow(0 0 25px rgba(240,192,64,0.6)); }
+}
+.title-logo__tagline {
+    font-size: 18px; color: var(--color-text-dim); margin-top: 8px;
+    letter-spacing: 4px;
+}
+.title-menu { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.title-menu .btn { min-width: 220px; }
+.title-footer {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: var(--color-text-dim); white-space: nowrap; opacity: 0.6;
+}

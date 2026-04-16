@@ -1,0 +1,24 @@
+/* buttons.css - 按钮组件 */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 24px; border: none; border-radius: var(--radius);
+    font-family: var(--font-main); font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s ease;
+    background: var(--color-surface-light); color: var(--color-text);
+}
+.btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(0.98); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; filter: none; }
+
+.btn--primary { background: var(--color-accent); color: #fff; }
+.btn--gold { background: linear-gradient(135deg, var(--color-gold), var(--color-gold-dark)); color: #1a1a1a; text-shadow: 0 1px 0 rgba(255,255,255,0.2); }
+.btn--gold:hover { box-shadow: 0 0 20px rgba(240,192,64,0.4); }
+.btn--outline { background: transparent; border: 1.5px solid var(--color-text-dim); color: var(--color-text); }
+.btn--outline:hover { border-color: var(--color-text); background: rgba(255,255,255,0.05); }
+.btn--danger { background: var(--color-danger); color: #fff; }
+
+.btn--large { padding: 14px 36px; font-size: 17px; border-radius: var(--radius-lg); }
+.btn--small { padding: 6px 14px; font-size: 13px; border-radius: var(--radius-sm); min-width: 36px; }
+.btn--full { width: 100%; }
+.btn--back { background: transparent; color: var(--color-text-dim); padding: 6px 12px; font-size: 14px; }
+.btn--back:hover { color: var(--color-text); }

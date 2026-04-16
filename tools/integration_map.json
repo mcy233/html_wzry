@@ -1,0 +1,389 @@
+{
+  "wb": {
+    "wp_team_id": "5352",
+    "wp_team_name": "北京WB",
+    "wp_player_names": [
+      "暖男",
+      "神人",
+      "乔兮",
+      "阿豆",
+      "花卷",
+      "小白熊",
+      "星宇",
+      "梓墨",
+      "暖阳",
+      "Star"
+    ],
+    "player_matches": {
+      "梓墨": "40243",
+      "雨寂": null,
+      "暖阳": "30270",
+      "丞丞": null,
+      "听悦": null,
+      "果冻": null,
+      "小麦": null,
+      "乔兮": "41008",
+      "玖欣": null
+    }
+  },
+  "jdg": {
+    "wp_team_id": "4468",
+    "wp_team_name": "北京JDG",
+    "wp_player_names": [
+      "烨辰",
+      "小磊",
+      "背影",
+      "笙生",
+      "KK",
+      "末将",
+      "小晚",
+      "Qy",
+      "小年",
+      "十三"
+    ],
+    "player_matches": {
+      "轻语": null,
+      "无双": null,
+      "清融": null,
+      "絕意": null,
+      "小玖": null,
+      "无畏": null,
+      "小A": null
+    }
+  },
+  "ag": {
+    "wp_team_id": "4457",
+    "wp_team_name": "成都AG超玩会",
+    "wp_player_names": [
+      "青云",
+      "爱思",
+      "笑影",
+      "久诚",
+      "一诺",
+      "忆安",
+      "极光",
+      "Cat",
+      "云黎",
+      "未央"
+    ],
+    "player_matches": {
+      "轩染": null,
+      "北诗": null,
+      "钟意": null,
+      "长生": null,
+      "一诺": "30816",
+      "小俞": null,
+      "大帅": null
+    }
+  },
+  "wolves": {
+    "wp_team_id": "4496",
+    "wp_team_name": "重庆狼队",
+    "wp_player_names": [
+      "帆帆",
+      "小胖",
+      "今屿",
+      "Fly",
+      "向鱼",
+      "晨阳",
+      "Hurt",
+      "月色",
+      "妖刀",
+      "筱辉"
+    ],
+    "player_matches": {
+      "归期": null,
+      "小胖": "40248",
+      "紫幻": null,
+      "道崽": null,
+      "信": null,
+      "晚星": null
+    }
+  },
+  "estar": {
+    "wp_team_id": "4458",
+    "wp_team_name": "武汉eStarPro",
+    "wp_player_names": [
+      "兮然",
+      "铭淮",
+      "懒懒",
+      "风劫",
+      "花海",
+      "子阳",
+      "坦然",
+      "清融",
+      "诺言",
+      "易峥",
+      "Alan"
+    ],
+    "player_matches": {
+      "Fly": null,
+      "小楼": null,
+      "Ming": null,
+      "亮宇": null,
+      "紫渊": null
+    }
+  },
+  "ksg": {
+    "wp_team_id": "4476",
+    "wp_team_name": "KSG",
+    "wp_player_names": [
+      "清风",
+      "白白",
+      "小玖",
+      "晚星",
+      "菠萝",
+      "暴风锐",
+      "啊泽",
+      "小A",
+      "一曲"
+    ],
+    "player_matches": {
+      "流星": null,
+      "句号": null,
+      "流浪": null,
+      "风箫": null,
+      "一笙": null
+    }
+  },
+  "rngm": {
+    "wp_team_id": "4739",
+    "wp_team_name": "上海RNG.M",
+    "wp_player_names": [
+      "乐崽",
+      "Zero",
+      "阳阳",
+      "小求",
+      "晚秋",
+      "小羽",
+      "虔诚",
+      "雨雨"
+    ],
+    "player_matches": {
+      "樱花": null,
+      "赤辰": null,
+      "雨空": null,
+      "极光": null,
+      "久酷": null
+    }
+  },
+  "edgm": {
+    "wp_team_id": "4471",
+    "wp_team_name": "上海EDG.M",
+    "wp_player_names": [
+      "Silver",
+      "嘉木",
+      "yuan",
+      "言梦",
+      "Roc",
+      "然然",
+      "柠栀",
+      "靖风",
+      "Ming"
+    ],
+    "player_matches": {
+      "小泽": null,
+      "夏凌": null,
+      "花卷": null,
+      "鸣鸣": null,
+      "涛": null
+    }
+  },
+  "ttg": {
+    "wp_team_id": "4460",
+    "wp_team_name": "广州TTG",
+    "wp_player_names": [
+      "明杨",
+      "亦南",
+      "九尾",
+      "诗酒",
+      "清清",
+      "许诺",
+      "冰尘",
+      "钎城",
+      "不然"
+    ],
+    "player_matches": {
+      "萝卜": null,
+      "佳心": null,
+      "鹤辞": null,
+      "小雪": null,
+      "涵": null
+    }
+  },
+  "dyg": {
+    "wp_team_id": "4473",
+    "wp_team_name": "深圳DYG",
+    "wp_player_names": [
+      "湘军",
+      "浪尘",
+      "三岁",
+      "华郴",
+      "情川",
+      "稚念",
+      "小义",
+      "决明",
+      "三藏"
+    ],
+    "player_matches": {
+      "小乐": null,
+      "小轩": null,
+      "向鱼": null,
+      "钎城": null,
+      "落空": null
+    }
+  },
+  "hero": {
+    "wp_team_id": "5354",
+    "wp_team_name": "南通Hero久竞",
+    "wp_player_names": [
+      "久酷",
+      "明锅",
+      "辉辉",
+      "星痕",
+      "一笙",
+      "东方",
+      "大白",
+      "紫幻",
+      "东晨",
+      "铃铛",
+      "无畏"
+    ],
+    "player_matches": {
+      "坦然": null,
+      "落尘": null,
+      "玖熙": null,
+      "妖刀": null,
+      "白清": null
+    }
+  },
+  "rw": {
+    "wp_team_id": "6449",
+    "wp_team_name": "济南RW侠",
+    "wp_player_names": [
+      "花月",
+      "傲神",
+      "小宋",
+      "晨风",
+      "花曲",
+      "无铭",
+      "小夜",
+      "花云",
+      "不弃",
+      "无心"
+    ],
+    "player_matches": {
+      "小度": null,
+      "今屿": null,
+      "挽墨": null,
+      "佩恩": null,
+      "梦溪": null
+    }
+  },
+  "lgd": {
+    "wp_team_id": "6881",
+    "wp_team_name": "杭州LGD.NBW",
+    "wp_player_names": [
+      "早点",
+      "赤辰",
+      "小北",
+      "伪装",
+      "江城",
+      "久龙",
+      "蓝猫",
+      "辰安"
+    ],
+    "player_matches": {
+      "小落": null,
+      "米苏": null,
+      "九尾": null,
+      "小涵": null,
+      "小崽": null
+    }
+  },
+  "we": {
+    "wp_team_id": "6275",
+    "wp_team_name": "西安WE",
+    "wp_player_names": [
+      "仙语",
+      "夕愈",
+      "离荒",
+      "556",
+      "Best",
+      "An",
+      "依恋",
+      "佩恩",
+      "千世",
+      "玄影"
+    ],
+    "player_matches": {
+      "文涛": null,
+      "子意": null,
+      "明崽": null,
+      "昭珏": null,
+      "九幽": null
+    }
+  },
+  "tesa": {
+    "wp_team_id": "6268",
+    "wp_team_name": "长沙TES.A",
+    "wp_player_names": [
+      "乐乐",
+      "幕色",
+      "以然",
+      "小鹏",
+      "雨辰",
+      "苏沫",
+      "小盾",
+      "李一",
+      "顾兴"
+    ],
+    "player_matches": {
+      "萝卜": null,
+      "佳心": null,
+      "鹤辞": null,
+      "小雪": null,
+      "阿豆": null
+    }
+  },
+  "drg": {
+    "wp_team_id": "4472",
+    "wp_team_name": "佛山DRG",
+    "wp_player_names": [
+      "源",
+      "小度",
+      "阿改",
+      "子越",
+      "青枫",
+      "百兽",
+      "梦岚",
+      "鹏鹏"
+    ],
+    "player_matches": {
+      "花缘": null,
+      "小小阳": null,
+      "柚子": null,
+      "梦岚": "40245",
+      "呆呆": null
+    }
+  },
+  "tcg": {
+    "wp_team_id": "7418",
+    "wp_team_name": "无锡TCG",
+    "wp_player_names": [
+      "杜康",
+      "冷陌",
+      "Tiger",
+      "余七",
+      "苏白",
+      "折扇"
+    ],
+    "player_matches": {
+      "大海": null,
+      "安凉": null,
+      "清弦": null,
+      "北觅": null,
+      "数字": null
+    }
+  }
+}

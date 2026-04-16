@@ -1,0 +1,48 @@
+/* tutorial.css - 新手引导 */
+.tutorial-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(5, 8, 15, 0.92);
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+.tutorial-card {
+    width: 90%; max-width: 440px;
+    background: var(--color-bg-light);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-surface-light);
+    box-shadow: 0 12px 60px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tutorial-progress {
+    height: 3px; background: var(--color-surface);
+}
+.tutorial-progress__fill {
+    height: 100%; background: var(--color-gold);
+    transition: width 0.4s ease;
+}
+.tutorial-step {
+    padding: 32px 24px 24px; text-align: center;
+}
+.tutorial-step__icon {
+    font-size: 48px; margin-bottom: 12px;
+    animation: float 3s ease infinite;
+}
+.tutorial-step__title {
+    font-size: 20px; font-weight: 800; margin-bottom: 12px;
+    color: var(--color-gold);
+}
+.tutorial-step__content {
+    font-size: 14px; line-height: 1.8; color: var(--color-text);
+    text-align: left; white-space: pre-line;
+}
+.tutorial-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; background: var(--color-surface);
+    border-top: 1px solid var(--color-surface-light);
+}
+.tutorial-counter {
+    font-size: 12px; color: var(--color-text-dim);
+    font-variant-numeric: tabular-nums;
+}
+.tutorial-skip { font-size: 12px !important; }

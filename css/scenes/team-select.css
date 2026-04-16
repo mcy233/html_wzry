@@ -1,0 +1,111 @@
+/* team-select.css - 战队选择界面 */
+.scene--team-select { background: var(--color-bg); }
+.team-select { height: 100%; display: flex; flex-direction: column; }
+.team-select__header { padding: 16px 20px; text-align: center; flex-shrink: 0; }
+.team-select__header h2 { font-size: 22px; color: var(--color-gold); }
+.team-select__subtitle { font-size: 13px; color: var(--color-text-dim); margin-top: 4px; }
+.team-select__body {
+    flex: 1; display: flex; gap: 16px; padding: 0 16px 16px;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .team-select__body { flex-direction: column; }
+}
+
+/* 地图容器 */
+.map-container {
+    flex: 1; min-width: 0; position: relative;
+    background: var(--color-bg-light); border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.china-map {
+    width: 100%; height: 100%; position: relative;
+    display: flex; align-items: center; justify-content: center;
+}
+.china-map-svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain;
+}
+
+/* 地图光点 */
+.map-dot {
+    position: absolute; transform: translate(-50%, -50%);
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--team-color, #4ea8de); border: 2px solid rgba(255,255,255,0.5);
+    cursor: pointer; z-index: 2; padding: 0;
+    transition: all 0.3s ease;
+}
+.map-dot:hover { transform: translate(-50%, -50%) scale(1.5); z-index: 5; border-color: #fff; }
+.map-dot--active { transform: translate(-50%, -50%) scale(1.6); z-index: 10; border-color: var(--color-gold); box-shadow: 0 0 20px var(--team-color); }
+.map-dot__pulse {
+    position: absolute; inset: -6px; border-radius: 50%;
+    border: 1.5px solid var(--team-color); opacity: 0;
+    animation: dotPulse 2s ease-out infinite;
+}
+@keyframes dotPulse {
+    0% { transform: scale(0.8); opacity: 0.8; }
+    100% { transform: scale(2); opacity: 0; }
+}
+.map-dot__label {
+    position: absolute; top: 110%; left: 50%; transform: translateX(-50%);
+    font-size: 10px; font-weight: 700; color: var(--color-text);
+    white-space: nowrap; text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+}
+
+/* 战队详情面板 */
+.team-detail-panel {
+    width: 360px; flex-shrink: 0; overflow-y: auto;
+}
+@media (max-width: 768px) { .team-detail-panel { width: 100%; max-height: 50vh; } }
+
+.team-detail__placeholder {
+    height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--color-text-dim); text-align: center; gap: 12px;
+}
+.team-detail__placeholder .team-detail__icon { font-size: 48px; opacity: 0.5; }
+
+.team-detail__card {
+    background: var(--color-bg-light); border-radius: var(--radius-lg);
+    overflow: hidden; border: 1px solid var(--color-surface-light);
+}
+.team-detail__banner {
+    padding: 20px; display: flex; align-items: center; gap: 16px;
+    justify-content: center;
+}
+.team-detail__logo { flex-shrink: 0; }
+.team-detail__logo svg { width: 80px; height: 80px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)); }
+.team-detail__team-name { font-size: 22px; font-weight: 800; color: #fff; }
+.team-detail__city { font-size: 14px; color: rgba(255,255,255,0.8); }
+.team-detail__arena { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+.team-detail__info { padding: 16px; }
+.team-detail__row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 8px 0; border-bottom: 1px solid var(--color-surface);
+    font-size: 13px;
+}
+.team-detail__row .label { color: var(--color-text-dim); flex-shrink: 0; margin-right: 12px; }
+.team-detail__row .value { text-align: right; }
+.team-detail__row .buff { color: var(--color-accent); font-size: 12px; }
+.team-detail__row .special { color: var(--color-gold); font-size: 12px; }
+.team-detail__row .stars { color: var(--color-warning); letter-spacing: 2px; }
+.team-detail__desc { font-size: 13px; color: var(--color-text-dim); margin: 12px 0; line-height: 1.6; }
+
+.team-detail__roster { margin-top: 12px; }
+.team-detail__roster h4 { font-size: 14px; margin-bottom: 8px; color: var(--color-text-dim); }
+.roster-list { display: flex; flex-direction: column; gap: 4px; }
+.roster-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; background: var(--color-surface); border-radius: var(--radius-sm);
+    font-size: 13px;
+}
+.roster-item__avatar { width: 36px; height: 36px; flex-shrink: 0; border-radius: 6px; overflow: hidden; }
+.roster-item__avatar svg { width: 36px; height: 36px; display: block; }
+.roster-item__role { color: var(--color-text-dim); width: 50px; font-size: 11px; }
+.roster-item__name { flex: 1; font-weight: 600; }
+.roster-item__rating { color: var(--color-gold); font-weight: 700; }
+
+.team-detail__actions { padding: 16px; }
