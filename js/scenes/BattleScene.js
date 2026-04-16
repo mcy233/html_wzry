@@ -57,7 +57,9 @@ export class BattleScene {
         );
         container.className = 'scene scene--battle';
         this._renderBattleUI();
-        await this._startBP();
+        // BP is a long interactive flow — run it *after* enter() returns
+        // so SceneManager can finish the transition and remove the overlay
+        setTimeout(() => this._startBP(), 50);
     }
 
     _loadSeason(teamId) {

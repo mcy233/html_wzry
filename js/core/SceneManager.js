@@ -25,29 +25,33 @@ export class SceneManager {
             return;
         }
         this._transitioning = true;
-
         this._showTransitionOverlay();
 
-        if (this._currentScene) {
-            await this._fadeOut();
-            if (typeof this._currentScene.exit === 'function') {
-                this._currentScene.exit();
+        try {
+            if (this._currentScene) {
+                await this._fadeOut();
+                if (typeof this._currentScene.exit === 'function') {
+                    this._currentScene.exit();
+                }
+                this._container.innerHTML = '';
             }
-            this._container.innerHTML = '';
+
+            this._currentName = name;
+            this._currentScene = this._scenes.get(name);
+            eventBus.emit('scene:change', name, params);
+
+            if (typeof this._currentScene.enter === 'function') {
+                await this._currentScene.enter(this._container, params);
+            }
+
+            await this._fadeIn();
+            eventBus.emit('scene:ready', name);
+        } catch (err) {
+            console.error(`[SceneManager] Error switching to "${name}":`, err);
+        } finally {
+            this._hideTransitionOverlay();
+            this._transitioning = false;
         }
-
-        this._currentName = name;
-        this._currentScene = this._scenes.get(name);
-        eventBus.emit('scene:change', name, params);
-
-        if (typeof this._currentScene.enter === 'function') {
-            await this._currentScene.enter(this._container, params);
-        }
-
-        await this._fadeIn();
-        this._hideTransitionOverlay();
-        this._transitioning = false;
-        eventBus.emit('scene:ready', name);
     }
 
     _showTransitionOverlay() {
