@@ -26,7 +26,7 @@ export class TeamSelectScene {
                 <div class="team-select__body">
                     <div class="map-container" id="map-container">
                         <div class="china-map" id="china-map">
-                            ${createChinaMapSVG(600, 500)}
+                            ${createChinaMapSVG()}
                         </div>
                     </div>
                     <div class="team-detail-panel" id="team-detail">

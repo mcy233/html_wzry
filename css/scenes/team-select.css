@@ -18,13 +18,19 @@
     flex: 1; min-width: 0; position: relative;
     background: #060e1a; border-radius: var(--radius-lg);
     overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
 }
 .china-map {
-    width: 100%; height: 100%; position: relative;
+    position: relative; width: 100%;
+    aspect-ratio: 700 / 560;
+    max-height: 100%;
+}
+@supports not (aspect-ratio: 1) {
+    .china-map { height: 0; padding-bottom: 80%; }
 }
 .china-map-svg {
     position: absolute; inset: 0; width: 100%; height: 100%;
-    object-fit: contain; pointer-events: none; user-select: none;
+    display: block; pointer-events: none; user-select: none;
 }
 
 /* 地图光点 */
