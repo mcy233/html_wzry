@@ -1,0 +1,1106 @@
+[
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "一诺（徐必成）",
+    "player_id": "一诺",
+    "position": "发育路",
+    "file": "AG-一诺.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "轩染（刘明）",
+    "player_id": "轩染",
+    "position": "对抗路",
+    "file": "AG-轩染.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "长生（谢承峻）",
+    "player_id": "长生",
+    "position": "中路",
+    "file": "AG-长生.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "钟意（陈家豪）",
+    "player_id": "钟意",
+    "position": "打野",
+    "file": "AG-钟意.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "大帅（孟家俊）",
+    "player_id": "大帅",
+    "position": "游走",
+    "file": "AG-大帅.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "北诗（郑国浩）",
+    "player_id": "北诗",
+    "position": "对抗路",
+    "file": "AG-北诗.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "救赎（张佳豪）",
+    "player_id": "救赎",
+    "position": "游走",
+    "file": "AG-救赎.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "小凡（陈一帆）",
+    "player_id": "小凡",
+    "position": "中路",
+    "file": "AG-小凡.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "染详（管泓宇）",
+    "player_id": "染详",
+    "position": "打野",
+    "file": "AG-染详.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "小俞（周宇）",
+    "player_id": "小俞",
+    "position": "发育路",
+    "file": "AG-小俞.png"
+  },
+  {
+    "team": "成都AG超玩会",
+    "team_short": "AG",
+    "player": "烈峰峰（张玉峰）",
+    "player_id": "烈峰峰",
+    "position": "游走",
+    "file": "AG-烈峰峰.png"
+  },
+  {
+    "team": "佛山DRG",
+    "team_short": "DRG",
+    "player": "梦岚（彭俊岚）",
+    "player_id": "梦岚",
+    "position": "发育路",
+    "file": "DRG-梦岚.png"
+  },
+  {
+    "team": "佛山DRG",
+    "team_short": "DRG",
+    "player": "花缘（谭锦威）",
+    "player_id": "花缘",
+    "position": "对抗路",
+    "file": "DRG-花缘.png"
+  },
+  {
+    "team": "佛山DRG",
+    "team_short": "DRG",
+    "player": "小小阳（应恒阳）",
+    "player_id": "小小阳",
+    "position": "打野",
+    "file": "DRG-小小阳.png"
+  },
+  {
+    "team": "佛山DRG",
+    "team_short": "DRG",
+    "player": "柚子（袁树鑫）",
+    "player_id": "柚子",
+    "position": "中路",
+    "file": "DRG-柚子.png"
+  },
+  {
+    "team": "佛山DRG",
+    "team_short": "DRG",
+    "player": "呆呆（赖永睿）",
+    "player_id": "呆呆",
+    "position": "游走",
+    "file": "DRG-呆呆.png"
+  },
+  {
+    "team": "佛山DRG",
+    "team_short": "DRG",
+    "player": "旭旭（陶晨旭）",
+    "player_id": "旭旭",
+    "position": "中路",
+    "file": "DRG-旭旭.png"
+  },
+  {
+    "team": "佛山DRG",
+    "team_short": "DRG",
+    "player": "源（李盛源）",
+    "player_id": "源",
+    "position": "游走",
+    "file": "DRG-源.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "钎城（周诣涛）",
+    "player_id": "钎城",
+    "position": "发育路",
+    "file": "DYG-钎城.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "小轩（王胜）",
+    "player_id": "小轩",
+    "position": "打野",
+    "file": "DYG-小轩.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "向鱼（蔡佑其）",
+    "player_id": "向鱼",
+    "position": "中路",
+    "file": "DYG-向鱼.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "栋栋（王栋）",
+    "player_id": "栋栋",
+    "position": "对抗路",
+    "file": "DYG-栋栋.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "小乐（黄家乐）",
+    "player_id": "小乐",
+    "position": "对抗路",
+    "file": "DYG-小乐.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "落空（周熙瑞）",
+    "player_id": "落空",
+    "position": "游走",
+    "file": "DYG-落空.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "秋源（吴星源）",
+    "player_id": "秋源",
+    "position": "发育路",
+    "file": "DYG-秋源.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "叶凡（刘译凡）",
+    "player_id": "叶凡",
+    "position": "游走",
+    "file": "DYG-叶凡.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "凌瑞（王厚豪）",
+    "player_id": "凌瑞",
+    "position": "打野",
+    "file": "DYG-凌瑞.png"
+  },
+  {
+    "team": "深圳DYG",
+    "team_short": "DYG",
+    "player": "星潼（吴金辉）",
+    "player_id": "星潼",
+    "position": "中路",
+    "file": "DYG-星潼.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "花卷（吴育涛）",
+    "player_id": "花卷",
+    "position": "中路",
+    "file": "EDGM-花卷.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "夏凌（张蜀徽）",
+    "player_id": "夏凌",
+    "position": "打野",
+    "file": "EDGM-夏凌.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "涛（应泽涛）",
+    "player_id": "涛",
+    "position": "游走",
+    "file": "EDGM-涛.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "小泽（沈宇泽）",
+    "player_id": "小泽",
+    "position": "对抗路",
+    "file": "EDGM-小泽.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "鸣鸣（张恒鸣）",
+    "player_id": "鸣鸣",
+    "position": "发育路",
+    "file": "EDGM-鸣鸣.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "凌云（陈泓铭）",
+    "player_id": "凌云",
+    "position": "发育路",
+    "file": "EDGM-凌云.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "月秋（赵浩伟）",
+    "player_id": "月秋",
+    "position": "中路",
+    "file": "EDGM-月秋.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "一曲（周锋）",
+    "player_id": "一曲",
+    "position": "中路",
+    "file": "EDGM-一曲.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "小碎（李文浩）",
+    "player_id": "小碎",
+    "position": "游走",
+    "file": "EDGM-小碎.png"
+  },
+  {
+    "team": "上海EDG.M",
+    "team_short": "EDGM",
+    "player": "百炼（杨仕晨）",
+    "player_id": "百炼",
+    "position": "打野",
+    "file": "EDGM-百炼.png"
+  },
+  {
+    "team": "武汉eStarPro",
+    "team_short": "eStar",
+    "player": "紫渊（侯维国）",
+    "player_id": "紫渊",
+    "position": "游走",
+    "file": "eStar-紫渊.png"
+  },
+  {
+    "team": "武汉eStarPro",
+    "team_short": "eStar",
+    "player": "亮宇（陈亮宇）",
+    "player_id": "亮宇",
+    "position": "发育路",
+    "file": "eStar-亮宇.png"
+  },
+  {
+    "team": "武汉eStarPro",
+    "team_short": "eStar",
+    "player": "小楼（沈宇轩）",
+    "player_id": "小楼",
+    "position": "打野",
+    "file": "eStar-小楼.png"
+  },
+  {
+    "team": "武汉eStarPro",
+    "team_short": "eStar",
+    "player": "誓约（姚嘉鹏）",
+    "player_id": "誓约",
+    "position": "对抗路",
+    "file": "eStar-誓约.png"
+  },
+  {
+    "team": "武汉eStarPro",
+    "team_short": "eStar",
+    "player": "Ming（池晓铭）",
+    "player_id": "Ming",
+    "position": "中单",
+    "file": "eStar-Ming.png"
+  },
+  {
+    "team": "武汉eStarPro",
+    "team_short": "eStar",
+    "player": "余忆（陈文塔）",
+    "player_id": "余忆",
+    "position": "打野",
+    "file": "eStar-余忆.png"
+  },
+  {
+    "team": "武汉eStarPro",
+    "team_short": "eStar",
+    "player": "昊昊（黄政昊）",
+    "player_id": "昊昊",
+    "position": "中单",
+    "file": "eStar-昊昊.png"
+  },
+  {
+    "team": "武汉eStarPro",
+    "team_short": "eStar",
+    "player": "浅风（胡宸语）",
+    "player_id": "浅风",
+    "position": "对抗路",
+    "file": "eStar-浅风.png"
+  },
+  {
+    "team": "武汉eStarPro",
+    "team_short": "eStar",
+    "player": "Fly（彭云飞）",
+    "player_id": "Fly",
+    "position": "对抗路",
+    "file": "eStar-Fly.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "无畏（杨涛）",
+    "player_id": "无畏",
+    "position": "游走",
+    "file": "JDG-无畏.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "轻语（谢欣臻）",
+    "player_id": "轻语",
+    "position": "对抗路",
+    "file": "JDG-轻语.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "清融（黄垚钦）",
+    "player_id": "清融",
+    "position": "中路",
+    "file": "JDG-清融.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "绝意（廖友侠）",
+    "player_id": "绝意",
+    "position": "发育路",
+    "file": "JDG-绝意.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "小玖（刘行）",
+    "player_id": "小玖",
+    "position": "发育路",
+    "file": "JDG-小玖.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "无双（胡家荣）",
+    "player_id": "无双",
+    "position": "打野",
+    "file": "JDG-无双.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "小A（杨荣鑫）",
+    "player_id": "小A",
+    "position": "游走",
+    "file": "JDG-小A.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "零栩（喻创鑫）",
+    "player_id": "零栩",
+    "position": "发育路",
+    "file": "JDG-零栩.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "小寒（金书瀚）",
+    "player_id": "小寒",
+    "position": "发育路",
+    "file": "JDG-小寒.png"
+  },
+  {
+    "team": "北京JDG",
+    "team_short": "JDG",
+    "player": "奶龙（郑毅恒）",
+    "player_id": "奶龙",
+    "position": "对抗路",
+    "file": "JDG-奶龙.png"
+  },
+  {
+    "team": "重庆狼队",
+    "team_short": "狼队",
+    "player": "清清（吴金翔）",
+    "player_id": "清清",
+    "position": "对抗路",
+    "file": "狼队-清清.png"
+  },
+  {
+    "team": "重庆狼队",
+    "team_short": "狼队",
+    "player": "小胖（李达亨）",
+    "player_id": "小胖",
+    "position": "打野",
+    "file": "狼队-小胖.png"
+  },
+  {
+    "team": "重庆狼队",
+    "team_short": "狼队",
+    "player": "紫幻（黄广顺）",
+    "player_id": "紫幻",
+    "position": "中路",
+    "file": "狼队-紫幻.png"
+  },
+  {
+    "team": "重庆狼队",
+    "team_short": "狼队",
+    "player": "道崽（杨凯博）",
+    "player_id": "道崽",
+    "position": "发育路",
+    "file": "狼队-道崽.png"
+  },
+  {
+    "team": "重庆狼队",
+    "team_short": "狼队",
+    "player": "信（苟宏鑫）",
+    "player_id": "信",
+    "position": "游走",
+    "file": "狼队-信.png"
+  },
+  {
+    "team": "重庆狼队",
+    "team_short": "狼队",
+    "player": "皖皖（杜远航）",
+    "player_id": "皖皖",
+    "position": "打野",
+    "file": "狼队-皖皖.png"
+  },
+  {
+    "team": "重庆狼队",
+    "team_short": "狼队",
+    "player": "归期（双小钧）",
+    "player_id": "归期",
+    "position": "对抗路",
+    "file": "狼队-归期.png"
+  },
+  {
+    "team": "重庆狼队",
+    "team_short": "狼队",
+    "player": "晚星（王恒鸿）",
+    "player_id": "晚星",
+    "position": "游走",
+    "file": "狼队-晚星.png"
+  },
+  {
+    "team": "杭州LGD.NBW",
+    "team_short": "LGD",
+    "player": "九尾（许鑫蓁）",
+    "player_id": "九尾",
+    "position": "中路",
+    "file": "LGD-九尾.png"
+  },
+  {
+    "team": "杭州LGD.NBW",
+    "team_short": "LGD",
+    "player": "小落（王科）",
+    "player_id": "小落",
+    "position": "对抗路",
+    "file": "LGD-小落.png"
+  },
+  {
+    "team": "杭州LGD.NBW",
+    "team_short": "LGD",
+    "player": "花花（丁璟灏）",
+    "player_id": "花花",
+    "position": "对抗路",
+    "file": "LGD-花花.png"
+  },
+  {
+    "team": "杭州LGD.NBW",
+    "team_short": "LGD",
+    "player": "米苏（姜腾瑞）",
+    "player_id": "米苏",
+    "position": "打野",
+    "file": "LGD-米苏.png"
+  },
+  {
+    "team": "杭州LGD.NBW",
+    "team_short": "LGD",
+    "player": "小名（李书名）",
+    "player_id": "小名",
+    "position": "中路",
+    "file": "LGD-小名.png"
+  },
+  {
+    "team": "杭州LGD.NBW",
+    "team_short": "LGD",
+    "player": "小涵（钟志涵）",
+    "player_id": "小涵",
+    "position": "发育路",
+    "file": "LGD-小涵.png"
+  },
+  {
+    "team": "杭州LGD.NBW",
+    "team_short": "LGD",
+    "player": "小久（阳文明）",
+    "player_id": "小久",
+    "position": "发育路",
+    "file": "LGD-小久.png"
+  },
+  {
+    "team": "杭州LGD.NBW",
+    "team_short": "LGD",
+    "player": "小崽（夏肇汛）",
+    "player_id": "小崽",
+    "position": "游走",
+    "file": "LGD-小崽.png"
+  },
+  {
+    "team": "杭州LGD.NBW",
+    "team_short": "LGD",
+    "player": "冰尘（李小龙）",
+    "player_id": "冰尘",
+    "position": "游走",
+    "file": "LGD-冰尘.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "久酷（王滔）",
+    "player_id": "久酷",
+    "position": "游走",
+    "file": "RNGM-久酷.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "樱花（林子涵）",
+    "player_id": "樱花",
+    "position": "对抗路",
+    "file": "RNGM-樱花.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "润润（蒋润）",
+    "player_id": "润润",
+    "position": "发育路",
+    "file": "RNGM-润润.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "小优（秦子恒）",
+    "player_id": "小优",
+    "position": "中路",
+    "file": "RNGM-小优.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "极光（周文强）",
+    "player_id": "极光",
+    "position": "发育路",
+    "file": "RNGM-极光.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "雨空（杨文岳）",
+    "player_id": "雨空",
+    "position": "中路",
+    "file": "RNGM-雨空.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "赤辰（伯晨赫）",
+    "player_id": "赤辰",
+    "position": "打野",
+    "file": "RNGM-赤辰.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "航航（谢模航）",
+    "player_id": "航航",
+    "position": "打野",
+    "file": "RNGM-航航.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "奕雨（项奕源）",
+    "player_id": "奕雨",
+    "position": "发育路",
+    "file": "RNGM-奕雨.png"
+  },
+  {
+    "team": "上海RNG.M",
+    "team_short": "RNGM",
+    "player": "小困（张翁豪）",
+    "player_id": "小困",
+    "position": "对抗路",
+    "file": "RNGM-小困.png"
+  },
+  {
+    "team": "济南RW侠",
+    "team_short": "RW侠",
+    "player": "小度（古伟雄）",
+    "player_id": "小度",
+    "position": "对抗路",
+    "file": "RW侠-小度.png"
+  },
+  {
+    "team": "济南RW侠",
+    "team_short": "RW侠",
+    "player": "梦溪（李文宝）",
+    "player_id": "梦溪",
+    "position": "游走",
+    "file": "RW侠-梦溪.png"
+  },
+  {
+    "team": "济南RW侠",
+    "team_short": "RW侠",
+    "player": "挽墨（骆雪岩）",
+    "player_id": "挽墨",
+    "position": "中路",
+    "file": "RW侠-挽墨.png"
+  },
+  {
+    "team": "济南RW侠",
+    "team_short": "RW侠",
+    "player": "佩恩（文帅）",
+    "player_id": "佩恩",
+    "position": "发育路",
+    "file": "RW侠-佩恩.png"
+  },
+  {
+    "team": "济南RW侠",
+    "team_short": "RW侠",
+    "player": "初晨（陶传凯）",
+    "player_id": "初晨",
+    "position": "打野",
+    "file": "RW侠-初晨.png"
+  },
+  {
+    "team": "济南RW侠",
+    "team_short": "RW侠",
+    "player": "今屿（徐翔宇）",
+    "player_id": "今屿",
+    "position": "打野",
+    "file": "RW侠-今屿.png"
+  },
+  {
+    "team": "济南RW侠",
+    "team_short": "RW侠",
+    "player": "苏瞳（孟凡苏）",
+    "player_id": "苏瞳",
+    "position": "对抗路",
+    "file": "RW侠-苏瞳.png"
+  },
+  {
+    "team": "长沙TES.A",
+    "team_short": "TES",
+    "player": "无幻（朱俊）",
+    "player_id": "无幻",
+    "position": "对抗路",
+    "file": "TES-无幻.png"
+  },
+  {
+    "team": "长沙TES.A",
+    "team_short": "TES",
+    "player": "安七（戴子强）",
+    "player_id": "安七",
+    "position": "打野",
+    "file": "TES-安七.png"
+  },
+  {
+    "team": "长沙TES.A",
+    "team_short": "TES",
+    "player": "景诗（李知杰）",
+    "player_id": "景诗",
+    "position": "中路",
+    "file": "TES-景诗.png"
+  },
+  {
+    "team": "长沙TES.A",
+    "team_short": "TES",
+    "player": "蓝桉（李涿阳）",
+    "player_id": "蓝桉",
+    "position": "发育路",
+    "file": "TES-蓝桉.png"
+  },
+  {
+    "team": "长沙TES.A",
+    "team_short": "TES",
+    "player": "小小飞（张宇飞）",
+    "player_id": "小小飞",
+    "position": "发育路",
+    "file": "TES-小小飞.png"
+  },
+  {
+    "team": "长沙TES.A",
+    "team_short": "TES",
+    "player": "帆帆（杨帆）",
+    "player_id": "帆帆",
+    "position": "游走",
+    "file": "TES-帆帆.png"
+  },
+  {
+    "team": "长沙TES.A",
+    "team_short": "TES",
+    "player": "书源（寇书源）",
+    "player_id": "书源",
+    "position": "打野",
+    "file": "TES-书源.png"
+  },
+  {
+    "team": "长沙TES.A",
+    "team_short": "TES",
+    "player": "星河（陈森锐）",
+    "player_id": "星河",
+    "position": "游走",
+    "file": "TES-星河.png"
+  },
+  {
+    "team": "广州TTG",
+    "team_short": "TTG",
+    "player": "萝卜（陈佳鸿）",
+    "player_id": "萝卜",
+    "position": "对抗路",
+    "file": "TTG-萝卜.png"
+  },
+  {
+    "team": "广州TTG",
+    "team_short": "TTG",
+    "player": "佳心（李佳旭）",
+    "player_id": "佳心",
+    "position": "打野",
+    "file": "TTG-佳心.png"
+  },
+  {
+    "team": "广州TTG",
+    "team_short": "TTG",
+    "player": "鹤辞（江利杰）",
+    "player_id": "鹤辞",
+    "position": "中路",
+    "file": "TTG-鹤辞.png"
+  },
+  {
+    "team": "广州TTG",
+    "team_short": "TTG",
+    "player": "小雪（岳彩营）",
+    "player_id": "小雪",
+    "position": "发育路",
+    "file": "TTG-小雪.png"
+  },
+  {
+    "team": "广州TTG",
+    "team_short": "TTG",
+    "player": "阿豆（蒋涛）",
+    "player_id": "阿豆",
+    "position": "游走",
+    "file": "TTG-阿豆.png"
+  },
+  {
+    "team": "广州TTG",
+    "team_short": "TTG",
+    "player": "嘉宝（康祺）",
+    "player_id": "嘉宝",
+    "position": "打野",
+    "file": "TTG-嘉宝.png"
+  },
+  {
+    "team": "广州TTG",
+    "team_short": "TTG",
+    "player": "涵（黄涵熙）",
+    "player_id": "涵",
+    "position": "游走",
+    "file": "TTG-涵.png"
+  },
+  {
+    "team": "北京WB",
+    "team_short": "WB",
+    "player": "暖阳（林恒）",
+    "player_id": "暖阳",
+    "position": "打野",
+    "file": "WB-暖阳.png"
+  },
+  {
+    "team": "北京WB",
+    "team_short": "WB",
+    "player": "梓墨（吴喆杰）",
+    "player_id": "梓墨",
+    "position": "对抗路",
+    "file": "WB-梓墨.png"
+  },
+  {
+    "team": "北京WB",
+    "team_short": "WB",
+    "player": "听悦（吴佐）",
+    "player_id": "听悦",
+    "position": "中路",
+    "file": "WB-听悦.png"
+  },
+  {
+    "team": "北京WB",
+    "team_short": "WB",
+    "player": "小麦（彭超平）",
+    "player_id": "小麦",
+    "position": "发育路",
+    "file": "WB-小麦.png"
+  },
+  {
+    "team": "北京WB",
+    "team_short": "WB",
+    "player": "玖欣（邹伟鑫）",
+    "player_id": "玖欣",
+    "position": "游走",
+    "file": "WB-玖欣.png"
+  },
+  {
+    "team": "北京WB",
+    "team_short": "WB",
+    "player": "雨寂（张帆远航）",
+    "player_id": "雨寂",
+    "position": "对抗路",
+    "file": "WB-雨寂.png"
+  },
+  {
+    "team": "北京WB",
+    "team_short": "WB",
+    "player": "乔兮（曾庆龙）",
+    "player_id": "乔兮",
+    "position": "发育路",
+    "file": "WB-乔兮.png"
+  },
+  {
+    "team": "北京WB",
+    "team_short": "WB",
+    "player": "果冻（倪钰城）",
+    "player_id": "果冻",
+    "position": "中路",
+    "file": "WB-果冻.png"
+  },
+  {
+    "team": "北京WB",
+    "team_short": "WB",
+    "player": "丞丞（陆俊丞）",
+    "player_id": "丞丞",
+    "position": "打野",
+    "file": "WB-丞丞.png"
+  },
+  {
+    "team": "西安WE",
+    "team_short": "WE",
+    "player": "文涛（朱文涛）",
+    "player_id": "文涛",
+    "position": "对抗路",
+    "file": "WE-文涛.png"
+  },
+  {
+    "team": "西安WE",
+    "team_short": "WE",
+    "player": "子意（秦子意）",
+    "player_id": "子意",
+    "position": "打野",
+    "file": "WE-子意.png"
+  },
+  {
+    "team": "西安WE",
+    "team_short": "WE",
+    "player": "明崽（戴家权）",
+    "player_id": "明崽",
+    "position": "中路",
+    "file": "WE-明崽.png"
+  },
+  {
+    "team": "西安WE",
+    "team_short": "WE",
+    "player": "墨衍（张衍佳）",
+    "player_id": "墨衍",
+    "position": "发育路",
+    "file": "WE-墨衍.png"
+  },
+  {
+    "team": "西安WE",
+    "team_short": "WE",
+    "player": "九幽（李俊超）",
+    "player_id": "九幽",
+    "position": "游走",
+    "file": "WE-九幽.png"
+  },
+  {
+    "team": "西安WE",
+    "team_short": "WE",
+    "player": "忆安（杜国豪）",
+    "player_id": "忆安",
+    "position": "游走",
+    "file": "WE-忆安.png"
+  },
+  {
+    "team": "西安WE",
+    "team_short": "WE",
+    "player": "昭珏（屈万东）",
+    "player_id": "昭珏",
+    "position": "发育路",
+    "file": "WE-昭珏.png"
+  },
+  {
+    "team": "情久",
+    "team_short": "情久",
+    "player": "无玄（陈志凯）",
+    "player_id": "无玄",
+    "position": "对抗路",
+    "file": "情久-无玄.png"
+  },
+  {
+    "team": "情久",
+    "team_short": "情久",
+    "player": "深巅（张嘉俊）",
+    "player_id": "深巅",
+    "position": "打野",
+    "file": "情久-深巅.png"
+  },
+  {
+    "team": "情久",
+    "team_short": "情久",
+    "player": "久寒（朱飞扬）",
+    "player_id": "久寒",
+    "position": "中路",
+    "file": "情久-久寒.png"
+  },
+  {
+    "team": "情久",
+    "team_short": "情久",
+    "player": "陌冷（徐舟）",
+    "player_id": "陌冷",
+    "position": "发育路",
+    "file": "情久-陌冷.png"
+  },
+  {
+    "team": "情久",
+    "team_short": "情久",
+    "player": "楠枫（李亮）",
+    "player_id": "楠枫",
+    "position": "游走",
+    "file": "情久-楠枫.png"
+  },
+  {
+    "team": "情久",
+    "team_short": "情久",
+    "player": "恒心（汤书恒）",
+    "player_id": "恒心",
+    "position": "对抗路",
+    "file": "情久-恒心.png"
+  },
+  {
+    "team": "情久",
+    "team_short": "情久",
+    "player": "白衣（刘芳凯）",
+    "player_id": "白衣",
+    "position": "游走",
+    "file": "情久-白衣.png"
+  },
+  {
+    "team": "无锡TCG",
+    "team_short": "TCG",
+    "player": "大海（叶建炜）",
+    "player_id": "大海",
+    "position": "对抗路",
+    "file": "TCG-大海.png"
+  },
+  {
+    "team": "无锡TCG",
+    "team_short": "TCG",
+    "player": "安凉（张雪龙）",
+    "player_id": "安凉",
+    "position": "打野",
+    "file": "TCG-安凉.png"
+  },
+  {
+    "team": "无锡TCG",
+    "team_short": "TCG",
+    "player": "北觅（吴鸿伟）",
+    "player_id": "北觅",
+    "position": "发育路",
+    "file": "TCG-北觅.png"
+  },
+  {
+    "team": "无锡TCG",
+    "team_short": "TCG",
+    "player": "数字（陆峰）",
+    "player_id": "数字",
+    "position": "游走",
+    "file": "TCG-数字.png"
+  },
+  {
+    "team": "无锡TCG",
+    "team_short": "TCG",
+    "player": "青槐（赵君）",
+    "player_id": "青槐",
+    "position": "对抗路",
+    "file": "TCG-青槐.png"
+  },
+  {
+    "team": "无锡TCG",
+    "team_short": "TCG",
+    "player": "江雾（刘舒菡）",
+    "player_id": "江雾",
+    "position": "中路",
+    "file": "TCG-江雾.png"
+  },
+  {
+    "team": "无锡TCG",
+    "team_short": "TCG",
+    "player": "熙河（韩佳成）",
+    "player_id": "熙河",
+    "position": "对抗路",
+    "file": "TCG-熙河.png"
+  },
+  {
+    "team": "无锡TCG",
+    "team_short": "TCG",
+    "player": "光明（余睿桐）",
+    "player_id": "光明",
+    "position": "对抗路",
+    "file": "TCG-光明.png"
+  },
+  {
+    "team": "无锡TCG",
+    "team_short": "TCG",
+    "player": "清弦（肖桂蕊）",
+    "player_id": "清弦",
+    "position": "中路",
+    "file": "TCG-清弦.png"
+  }
+]

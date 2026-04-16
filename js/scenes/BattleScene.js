@@ -12,6 +12,19 @@ import { shakeElement, pulseElement } from '../ui/Transitions.js';
 import { teamLogoHTML, playerAvatarHTML } from '../ui/ImageManager.js';
 import { ECONOMY, PLAYER, MORALE } from '../data/balance.js';
 import { sfxBan, sfxPick, sfxBattleStart, sfxQTEPerfect, sfxCounterWin, sfxCounterLose, sfxVictory, sfxDefeat, sfxCheer, sfxConfirm, sfxSelect, startBGM, stopBGM } from '../ui/SoundManager.js';
+import { getCoachAnalysis, getCoachConfig, saveCoachConfig } from '../systems/AICoach.js';
+
+function _formatCoachText(text) {
+    return text.split('\n').filter(l => l.trim()).map(line => {
+        let cls = 'coach-line';
+        if (line.includes('⚠️') || line.includes('注意')) cls += ' coach-line--warn';
+        else if (line.includes('💡') || line.includes('建议')) cls += ' coach-line--suggest';
+        else if (line.includes('📊') || line.includes('📋')) cls += ' coach-line--info';
+        else if (line.includes('✅')) cls += ' coach-line--ok';
+        const formatted = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        return `<div class="${cls}">${formatted}</div>`;
+    }).join('');
+}
 
 export class BattleScene {
     async enter(container, params = {}) {
@@ -229,17 +242,13 @@ export class BattleScene {
     }
 
     _renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, phase) {
-        const allBanned = [...banned.my, ...banned.enemy];
-        const allPicked = [...picks.my, ...picks.enemy];
-        const advice = this._battleSystem.getAIAdvice(allBanned, picks.my, picks.enemy);
-        const banRecs = this._battleSystem.getRecommendedBan(this._enemyStarters);
         const isBan = phase === 'ban';
 
         const banSlots = (list) => {
             let html = '';
             for (let i = 0; i < 5; i++) {
                 html += list[i]
-                    ? `<span class="bp-ban-slot bp-ban-slot--filled">${this._heroCard(list[i], 24)}</span>`
+                    ? `<span class="bp-ban-slot bp-ban-slot--filled">${this._heroCard(list[i], 28, false)}</span>`
                     : `<span class="bp-ban-slot"></span>`;
             }
             return html;
@@ -250,7 +259,7 @@ export class BattleScene {
             for (let i = 0; i < 5; i++) {
                 const h = pickList[i];
                 const r = roleList[i];
-                html += `<div class="bp-pick-slot ${h ? 'bp-pick-slot--filled' : ''}">${h ? this._heroCard(h, 38) : `<span class="bp-pick-placeholder">${r || '?'}</span>`}${r ? `<span class="bp-pick-role-tag">${r}</span>` : ''}</div>`;
+                html += `<div class="bp-pick-slot ${h ? 'bp-pick-slot--filled' : ''}">${h ? this._heroCard(h, 42) : `<span class="bp-pick-placeholder">${r || '?'}</span>`}${r ? `<span class="bp-pick-role-tag">${r}</span>` : ''}</div>`;
             }
             return html;
         };
@@ -272,13 +281,86 @@ export class BattleScene {
                     <div class="bp-board__picks">${pickSlots(picks.enemy, enemyPickRoles)}</div>
                 </div>
             </div>
-            <div class="bp-board__ai-panel">
-                <h4>🤖 AI教练</h4>
-                ${isBan ? banRecs.map(r => `<div class="bp-ai-tip bp-ai-tip--suggest">💡 建议禁 <strong>${r.hero}</strong> — ${r.reason}</div>`).join('') : ''}
-                ${advice.map(a => `<div class="bp-ai-tip bp-ai-tip--${a.type}">${a.icon} ${a.text}</div>`).join('')}
+            <div class="bp-board__body">
+                <div class="bp-board__select" id="bp-select-area"></div>
+                <div class="bp-board__coach" id="bp-coach-panel">
+                    <div class="coach-header">
+                        <span class="coach-icon">🎙️</span>
+                        <span class="coach-title">AI 教练</span>
+                        <button class="coach-config-btn" id="coach-config-btn" title="配置AI模型">⚙️</button>
+                    </div>
+                    <div class="coach-content" id="coach-content">
+                        <div class="coach-loading">分析中...</div>
+                    </div>
+                </div>
             </div>
-            <div class="bp-board__select" id="bp-select-area"></div>
         </div>`;
+
+        this._updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase);
+        this._bindCoachConfig();
+    }
+
+    async _updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase) {
+        const panel = this._container.querySelector('#coach-content');
+        if (!panel) return;
+        panel.innerHTML = '<div class="coach-loading"><span class="coach-typing"></span> 分析中...</div>';
+
+        const ctx = {
+            phase,
+            myBans: banned.my,
+            enemyBans: banned.enemy,
+            myPicks: picks.my,
+            enemyPicks: picks.enemy,
+            myPickRoles,
+            enemyPickRoles,
+            myTeamName: this._myTeam.shortName,
+            enemyTeamName: this._enemyTeam.shortName,
+            enemyStarters: this._enemyStarters,
+            stepLabel: this._container.querySelector('#bp-status')?.textContent || '',
+        };
+
+        try {
+            const text = await getCoachAnalysis(ctx);
+            if (!panel.isConnected) return;
+            panel.innerHTML = _formatCoachText(text);
+        } catch (e) {
+            panel.innerHTML = '<div class="coach-error">分析生成失败</div>';
+        }
+    }
+
+    _bindCoachConfig() {
+        const btn = this._container.querySelector('#coach-config-btn');
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+            const config = getCoachConfig();
+            const panel = this._container.querySelector('#coach-content');
+            if (!panel) return;
+            panel.innerHTML = `
+                <div class="coach-config">
+                    <p class="coach-config__desc">配置大模型API后，AI教练将提供更智能的分析（支持 DeepSeek、OpenAI 等兼容接口）</p>
+                    <label>API 地址</label>
+                    <input type="text" id="coach-api-url" value="${config.apiUrl || 'https://api.deepseek.com/v1/chat/completions'}" placeholder="https://api.deepseek.com/v1/chat/completions"/>
+                    <label>API Key</label>
+                    <input type="password" id="coach-api-key" value="${config.apiKey || ''}" placeholder="sk-..."/>
+                    <label>模型名称</label>
+                    <input type="text" id="coach-model" value="${config.model || 'deepseek-chat'}" placeholder="deepseek-chat"/>
+                    <div class="coach-config__actions">
+                        <button class="btn btn--sm" id="coach-save">保存</button>
+                        <button class="btn btn--sm btn--outline" id="coach-cancel">取消</button>
+                    </div>
+                </div>`;
+            panel.querySelector('#coach-save').addEventListener('click', () => {
+                saveCoachConfig({
+                    apiUrl: panel.querySelector('#coach-api-url').value.trim(),
+                    apiKey: panel.querySelector('#coach-api-key').value.trim(),
+                    model: panel.querySelector('#coach-model').value.trim(),
+                });
+                panel.innerHTML = '<div class="coach-success">✅ 配置已保存，下次操作时生效</div>';
+            });
+            panel.querySelector('#coach-cancel').addEventListener('click', () => {
+                panel.innerHTML = '<div class="coach-loading">等待下一步操作...</div>';
+            });
+        });
     }
 
     _updateBPStatus(main, text) {
