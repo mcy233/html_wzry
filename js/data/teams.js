@@ -26,7 +26,7 @@ export const TEAMS = [
         description: '京城豪门，2025年总决赛季军，2026春季赛第一轮全胜。暖阳与梓墨的组合稳如磐石，新赛季誓夺冠军。',
         buff: { name: '京城底蕴', desc: '团队韧性+10%，主场作战全属性+5%', tenacity: 0.10, home: 0.05 },
         special: { name: '北京德比', desc: '对阵北京JDG时触发特殊剧情，胜利获双倍奖励' },
-        mapPosition: { x: 58.5, y: 22.5 },
+        mapPosition: { x: 67.0, y: 38.5 },
         players: [
             { id: '梓墨', name: '吴喆杰', role: TOP, rating: 88, stats: { 操作: 86, 意识: 88, 对线: 91, 配合: 85, 抗压: 90, 心态: 87 } },
             { id: '雨寂', name: '张帆远航', role: TOP, rating: 75, stats: { 操作: 78, 意识: 72, 对线: 76, 配合: 70, 抗压: 73, 心态: 71 } },
@@ -51,7 +51,7 @@ export const TEAMS = [
         description: '2026春季赛常规赛冠军，无畏获常规赛MVP。进攻凶猛，打法犀利，目标直指年度总冠军。',
         buff: { name: '京城底蕴', desc: '团队韧性+10%，主场作战全属性+5%', tenacity: 0.10, home: 0.05 },
         special: { name: '无畏之心', desc: '逆风局（落后2局时）全队属性+15%' },
-        mapPosition: { x: 60, y: 23.5 },
+        mapPosition: { x: 71.0, y: 40.5 },
         players: [
             { id: '轻语', name: '谢欣臻', role: TOP, rating: 84, stats: { 操作: 85, 意识: 82, 对线: 86, 配合: 83, 抗压: 80, 心态: 82 } },
             { id: '无双', name: '胡家荣', role: JG, rating: 86, stats: { 操作: 88, 意识: 87, 对线: 80, 配合: 84, 抗压: 83, 心态: 85 } },
@@ -74,7 +74,7 @@ export const TEAMS = [
         description: '2025年度总决赛冠军！一诺是联盟最强射手，钟意的打野节奏无人能挡。卫冕冠军的骄傲，成都人的荣耀。',
         buff: { name: '天府之国', desc: '选手状态恢复速度+20%', recovery: 0.20 },
         special: { name: '卫冕之路', desc: '对手对阵AG额外认真（对手+5%），但AG击败强敌获额外声望' },
-        mapPosition: { x: 40, y: 46 },
+        mapPosition: { x: 49.4, y: 64.2 },
         players: [
             { id: '轩染', name: '刘明', role: TOP, rating: 86, stats: { 操作: 87, 意识: 85, 对线: 88, 配合: 84, 抗压: 83, 心态: 85 } },
             { id: '北诗', name: '郑国浩', role: TOP, rating: 78, stats: { 操作: 80, 意识: 76, 对线: 79, 配合: 74, 抗压: 76, 心态: 77 } },
@@ -97,7 +97,7 @@ export const TEAMS = [
         description: 'KPL第一支超级大满贯战队，小胖是联盟顶级打野。2026春季赛总决赛亚军，距离冠军只差一步。',
         buff: { name: '山城意志', desc: '逆风局韧性+15%', tenacity: 0.15 },
         special: { name: '狼群猎杀', desc: '连胜3场后进入"狼群状态"，团队配合+10%' },
-        mapPosition: { x: 39, y: 42 },
+        mapPosition: { x: 53.2, y: 66.8 },
         players: [
             { id: '归期', name: '双小钧', role: TOP, rating: 85, stats: { 操作: 84, 意识: 86, 对线: 87, 配合: 83, 抗压: 86, 心态: 84 } },
             { id: '小胖', name: '李达亨', role: JG, rating: 89, stats: { 操作: 91, 意识: 90, 对线: 82, 配合: 87, 抗压: 88, 心态: 88 } },
@@ -119,7 +119,7 @@ export const TEAMS = [
         description: '曾经的王朝战队跌入低谷，传奇选手Fly仍在坚守。2026春季赛第一轮0-5全败，但星火不灭。',
         buff: { name: '江城豪情', desc: '暴击率+8%，大招伤害+5%', crit: 0.08, ultDmg: 0.05 },
         special: { name: '星火燎原', desc: '初始实力较低但成长最快，Fly关键局爆发超常实力' },
-        mapPosition: { x: 50, y: 43 },
+        mapPosition: { x: 65.6, y: 64.2 },
         players: [
             { id: 'Fly', name: '彭云飞', role: TOP, rating: 82, stats: { 操作: 88, 意识: 84, 对线: 83, 配合: 78, 抗压: 85, 心态: 80 } },
             { id: '小楼', name: '沈宇轩', role: JG, rating: 78, stats: { 操作: 80, 意识: 79, 对线: 72, 配合: 76, 抗压: 75, 心态: 77 } },
@@ -140,7 +140,7 @@ export const TEAMS = [
         description: '2026春季赛总冠军！流浪获决赛MVP，是联盟最灵活多变的队伍。冠军班底再出发。',
         buff: { name: '姑苏风雅', desc: '策略多样性+10%，Ban/Pick可多看到1个对方偏好', strategy: 0.10 },
         special: { name: '冠军底气', desc: '赛季初期士气值最高' },
-        mapPosition: { x: 63, y: 38 },
+        mapPosition: { x: 78.0, y: 60.5 },
         players: [
             { id: '流星', name: '李星', role: TOP, rating: 84, stats: { 操作: 83, 意识: 85, 对线: 86, 配合: 82, 抗压: 83, 心态: 84 } },
             { id: '句号', name: '何伟嘉', role: JG, rating: 86, stats: { 操作: 87, 意识: 88, 对线: 78, 配合: 85, 抗压: 84, 心态: 85 } },
@@ -161,7 +161,7 @@ export const TEAMS = [
         description: '皇族传承，底蕴深厚。上海双雄之一，拥有灵活的战术体系和坚韧的比赛风格。',
         buff: { name: '魔都节奏', desc: '攻速+8%', atkSpeed: 0.08 },
         special: { name: '皇族传承', desc: '关键团战决策成功率+10%' },
-        mapPosition: { x: 65, y: 38 },
+        mapPosition: { x: 82.5, y: 62.0 },
         players: [
             { id: '樱花', name: '林子涵', role: TOP, rating: 83, stats: { 操作: 85, 意识: 82, 对线: 84, 配合: 80, 抗压: 81, 心态: 82 } },
             { id: '赤辰', name: '伯晨赫', role: JG, rating: 80, stats: { 操作: 82, 意识: 80, 对线: 74, 配合: 79, 抗压: 78, 心态: 79 } },
@@ -182,7 +182,7 @@ export const TEAMS = [
         description: '上海双雄之一，以稳健的防守和耐心的运营著称。逆境中更显韧性。',
         buff: { name: '魔都节奏', desc: '攻速+8%', atkSpeed: 0.08 },
         special: { name: '绝境逆转', desc: '被逼入淘汰赛边缘时属性大幅提升' },
-        mapPosition: { x: 66, y: 39.5 },
+        mapPosition: { x: 80.0, y: 64.0 },
         players: [
             { id: '小泽', name: '沈宇泽', role: TOP, rating: 80, stats: { 操作: 81, 意识: 79, 对线: 82, 配合: 78, 抗压: 80, 心态: 79 } },
             { id: '夏凌', name: '张蜀徽', role: JG, rating: 79, stats: { 操作: 80, 意识: 79, 对线: 73, 配合: 78, 抗压: 77, 心态: 78 } },
@@ -203,7 +203,7 @@ export const TEAMS = [
         description: '岭南锐气，敢为人先。广州TTG以极致的前期进攻闻名联盟，一旦起飞势不可挡。',
         buff: { name: '岭南锐气', desc: '先手伤害+10%', firstStrike: 0.10 },
         special: { name: '敢为人先', desc: '前期节奏优势加成' },
-        mapPosition: { x: 53, y: 58 },
+        mapPosition: { x: 61.5, y: 83.0 },
         players: [
             { id: '萝卜', name: '陈佳鸿', role: TOP, rating: 82, stats: { 操作: 84, 意识: 80, 对线: 83, 配合: 80, 抗压: 79, 心态: 81 } },
             { id: '佳心', name: '李佳旭', role: JG, rating: 83, stats: { 操作: 85, 意识: 82, 对线: 76, 配合: 82, 抗压: 81, 心态: 82 } },
@@ -224,7 +224,7 @@ export const TEAMS = [
         description: '创新之城孕育的创新战队，版本适应最快，战术千变万化。向鱼的中路风格独树一帜。',
         buff: { name: '创新之城', desc: '技能CD-8%', cdReduce: 0.08 },
         special: { name: '深圳速度', desc: '版本适应最快，新战术学习消耗-30%' },
-        mapPosition: { x: 55, y: 58 },
+        mapPosition: { x: 67.0, y: 86.0 },
         players: [
             { id: '小乐', name: '黄家乐', role: TOP, rating: 83, stats: { 操作: 84, 意识: 82, 对线: 84, 配合: 81, 抗压: 82, 心态: 82 } },
             { id: '小轩', name: '王胜', role: JG, rating: 84, stats: { 操作: 86, 意识: 83, 对线: 77, 配合: 83, 抗压: 82, 心态: 83 } },
@@ -245,7 +245,7 @@ export const TEAMS = [
         description: '新秀摇篮，坦然的FMVP底蕴加上新生力量，南通Hero久竞总能在关键时刻给人惊喜。',
         buff: { name: '江海门户', desc: '经验获取+15%', expBonus: 0.15 },
         special: { name: '英雄归来', desc: '坦然的FMVP底蕴，关键场次触发超常发挥' },
-        mapPosition: { x: 65, y: 36 },
+        mapPosition: { x: 79.5, y: 57.0 },
         players: [
             { id: '坦然', name: '孙麟威', role: TOP, rating: 86, stats: { 操作: 88, 意识: 86, 对线: 89, 配合: 82, 抗压: 85, 心态: 84 } },
             { id: '落尘', name: '张世杰', role: JG, rating: 80, stats: { 操作: 82, 意识: 79, 对线: 74, 配合: 79, 抗压: 78, 心态: 79 } },
@@ -266,7 +266,7 @@ export const TEAMS = [
         description: '泉城侠客，以弱胜强的传奇。RW侠总能在逆境中爆发惊人能量，侠义精神深入骨髓。',
         buff: { name: '泉城灵动', desc: '移速+5%', moveSpeed: 0.05 },
         special: { name: '侠客风骨', desc: '以弱胜强时获得额外声望和奖励' },
-        mapPosition: { x: 59, y: 30 },
+        mapPosition: { x: 69.8, y: 48.2 },
         players: [
             { id: '小度', name: '古伟雄', role: TOP, rating: 81, stats: { 操作: 82, 意识: 80, 对线: 83, 配合: 79, 抗压: 80, 心态: 80 } },
             { id: '今屿', name: '徐翔宇', role: JG, rating: 82, stats: { 操作: 84, 意识: 81, 对线: 76, 配合: 81, 抗压: 80, 心态: 81 } },
@@ -287,7 +287,7 @@ export const TEAMS = [
         description: '诗画江南的坚守者，杭州LGD以极致的后期运营闻名。只要比赛拖到30分钟，他们就是最强的。',
         buff: { name: '钱塘风韵', desc: '闪避+8%', dodge: 0.08 },
         special: { name: '西湖韧性', desc: '后期（回合4-5）属性持续增长' },
-        mapPosition: { x: 64, y: 40 },
+        mapPosition: { x: 77.5, y: 66.5 },
         players: [
             { id: '小落', name: '王科', role: TOP, rating: 81, stats: { 操作: 82, 意识: 80, 对线: 82, 配合: 79, 抗压: 81, 心态: 80 } },
             { id: '米苏', name: '姜腾瑞', role: JG, rating: 80, stats: { 操作: 81, 意识: 80, 对线: 74, 配合: 80, 抗压: 79, 心态: 79 } },
@@ -308,7 +308,7 @@ export const TEAMS = [
         description: '十三朝古都的传承者，西安WE打法沉稳老练。赛季越到后期越强，是真正的大器晚成型队伍。',
         buff: { name: '古都传承', desc: '经验+10%', expBonus: 0.10 },
         special: { name: '十三朝底蕴', desc: '赛季越到后期属性成长越快' },
-        mapPosition: { x: 43, y: 32 },
+        mapPosition: { x: 57.0, y: 54.5 },
         players: [
             { id: '文涛', name: '朱文涛', role: TOP, rating: 79, stats: { 操作: 80, 意识: 78, 对线: 80, 配合: 77, 抗压: 78, 心态: 78 } },
             { id: '子意', name: '秦子意', role: JG, rating: 80, stats: { 操作: 81, 意识: 80, 对线: 74, 配合: 79, 抗压: 79, 心态: 79 } },
@@ -329,7 +329,7 @@ export const TEAMS = [
         description: '娱乐之都的青春风暴，长沙TES.A以年轻选手的冲劲和无所畏惧的打法著称。',
         buff: { name: '星城活力', desc: '暴击+6%', crit: 0.06 },
         special: { name: '娱乐之都', desc: '选手心态恢复最快，连败不掉士气' },
-        mapPosition: { x: 51, y: 46 },
+        mapPosition: { x: 63.5, y: 70.5 },
         players: [
             { id: '萝卜', name: '陈佳鸿', role: TOP, rating: 82, stats: { 操作: 84, 意识: 80, 对线: 83, 配合: 80, 抗压: 79, 心态: 81 } },
             { id: '佳心', name: '李佳旭', role: JG, rating: 81, stats: { 操作: 83, 意识: 80, 对线: 75, 配合: 80, 抗压: 79, 心态: 80 } },
@@ -350,7 +350,7 @@ export const TEAMS = [
         description: '武术之城的防守大师，佛山DRG擅长在对手进攻时抓住破绽进行致命反击。',
         buff: { name: '武术之城', desc: '反击伤害+10%', counterDmg: 0.10 },
         special: { name: '龙之逆鳞', desc: '被对手压制后反击伤害递增' },
-        mapPosition: { x: 52, y: 57 },
+        mapPosition: { x: 58.5, y: 86.0 },
         players: [
             { id: '花缘', name: '谭锦威', role: TOP, rating: 82, stats: { 操作: 83, 意识: 81, 对线: 83, 配合: 80, 抗压: 82, 心态: 81 } },
             { id: '小小阳', name: '应恒阳', role: JG, rating: 81, stats: { 操作: 82, 意识: 81, 对线: 74, 配合: 80, 抗压: 80, 心态: 80 } },
@@ -371,7 +371,7 @@ export const TEAMS = [
         description: '乌镇水乡走出的黑马战队，临时席位却有着不灭的斗志。情义长久，永不言弃。',
         buff: { name: '乌镇智慧', desc: '随机获得对手情报', intel: true },
         special: { name: '情义长久', desc: '临时席位的不屈意志，以弱胜强概率提升' },
-        mapPosition: { x: 64, y: 41 },
+        mapPosition: { x: 79.0, y: 64.5 },
         players: [
             { id: '无玄', name: '陈志凯', role: TOP, rating: 77, stats: { 操作: 78, 意识: 76, 对线: 78, 配合: 75, 抗压: 76, 心态: 76 } },
             { id: '深巅', name: '张家俊', role: JG, rating: 78, stats: { 操作: 80, 意识: 77, 对线: 72, 配合: 77, 抗压: 76, 心态: 77 } },
@@ -392,7 +392,7 @@ export const TEAMS = [
         description: '太湖之畔的新生力量，初始最弱但成长曲线最陡。选择无锡TCG是真正的勇者之旅。',
         buff: { name: '太湖之光', desc: '夜间比赛属性+5%', nightBonus: 0.05 },
         special: { name: '破茧成蝶', desc: '初始最弱但成长曲线最陡，终极养成挑战' },
-        mapPosition: { x: 63.5, y: 37 },
+        mapPosition: { x: 76.0, y: 58.5 },
         players: [
             { id: '大海', name: '叶建炜', role: TOP, rating: 74, stats: { 操作: 76, 意识: 72, 对线: 75, 配合: 72, 抗压: 73, 心态: 73 } },
             { id: '安凉', name: '张雪龙', role: JG, rating: 73, stats: { 操作: 75, 意识: 72, 对线: 68, 配合: 72, 抗压: 71, 心态: 72 } },
