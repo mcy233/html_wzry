@@ -1,17 +1,21 @@
 /**
- * BattleScene - 比赛场景 v2
- * 流程：BP → 对线期 → 野区博弈 → 中期团战 → 宏观策略 → 终局决战
+ * BattleScene - 比赛场景 v3 (卡牌博弈版)
+ * 流程：BP → 卡牌对战(9轮+决胜) → 赛果
  */
 import { game } from '../core/GameEngine.js';
 import { getTeamById, getStartersByTeamId, TEAMS } from '../data/teams.js';
-import { BattleSystem, TF_STRATEGIES, MACRO_STRATEGIES } from '../systems/BattleSystem.js';
+import { BattleSystem } from '../systems/BattleSystem.js';
+import { CardBattleSystem } from '../systems/CardBattleSystem.js';
 import { SeasonSystem } from '../systems/SeasonSystem.js';
 import { HEROES, HERO_ROLES, getHero, getPlayerHeroes, getCounterInfo, getHeroesForPosition, heroImgHTML, evaluateComp } from '../data/heroes.js';
 import { createElement, typeWriter } from '../ui/Components.js';
 import { shakeElement, pulseElement } from '../ui/Transitions.js';
 import { teamLogoHTML, playerAvatarHTML } from '../ui/ImageManager.js';
 import { ECONOMY, PLAYER, MORALE } from '../data/balance.js';
-import { sfxBan, sfxPick, sfxBattleStart, sfxQTEPerfect, sfxCounterWin, sfxCounterLose, sfxVictory, sfxDefeat, sfxCheer, sfxConfirm, sfxSelect, startBGM, stopBGM } from '../ui/SoundManager.js';
+import { CARD_TYPES, LANES } from '../data/cards.js';
+import { createMobaMapSVG } from '../ui/MobaMap.js';
+import { renderCard, renderHandArea, renderCommandZone, renderEnemyCards, renderSettlements, renderCardCompact, renderLaneSelector } from '../ui/CardRenderer.js';
+import { sfxBan, sfxPick, sfxBattleStart, sfxVictory, sfxDefeat, sfxCheer, sfxConfirm, sfxSelect, sfxKill, sfxCardPlay, sfxCardReveal, sfxTowerDestroy, sfxObjective, sfxDiscard, startBGM, stopBGM } from '../ui/SoundManager.js';
 import { getCoachAnalysis, getCoachConfig, saveCoachConfig, estimateWinRate } from '../systems/AICoach.js';
 
 function _formatCoachText(text) {
@@ -19,13 +23,11 @@ function _formatCoachText(text) {
         let cls = 'coach-line';
         const trimmed = line.trim();
         if (trimmed.startsWith('📋') || trimmed.startsWith('🎯') || trimmed.startsWith('📌')) cls += ' coach-line--heading';
-        else if (trimmed.startsWith('⚠️') || trimmed.includes('注意')) cls += ' coach-line--warn';
+        else if (trimmed.startsWith('⚠️')) cls += ' coach-line--warn';
         else if (trimmed.startsWith('💡') || trimmed.startsWith('🌟') || trimmed.startsWith('⚔️')) cls += ' coach-line--suggest';
         else if (trimmed.startsWith('📊')) cls += ' coach-line--winrate';
         else if (trimmed.startsWith('🔴')) cls += ' coach-line--warn';
         else if (trimmed.startsWith('✅')) cls += ' coach-line--ok';
-        else if (trimmed.startsWith('🔄')) cls += ' coach-line--info';
-        if (trimmed.startsWith('备选') || trimmed.startsWith('   ')) cls += ' coach-line--indent';
         const formatted = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         return `<div class="${cls}">${formatted}</div>`;
     }).join('');
@@ -49,11 +51,9 @@ export class BattleScene {
 
         this._myStarters = this._getMyStarters(teamId);
         this._enemyStarters = getStartersByTeamId(this._enemyTeam.id);
-        const conditions = {};
-        (game.state.players || []).forEach(p => { conditions[p.id] = p.condition || 80; });
         this._battleSystem = new BattleSystem(
             this._myTeam, this._enemyTeam, this._myStarters, this._enemyStarters,
-            { morale: game.state.team?.morale || 70, playerConditions: conditions }
+            { morale: game.state.team?.morale || 70, playerConditions: {} }
         );
         container.className = 'scene scene--battle';
         this._renderBattleUI();
@@ -64,7 +64,6 @@ export class BattleScene {
         if (game.state.seasonSystem) return SeasonSystem.fromSaveData(game.state.seasonSystem);
         const sys = new SeasonSystem(teamId); sys.initGroups(); return sys;
     }
-
     exit() { this._container = null; }
 
     _getMyStarters(teamId) {
@@ -133,16 +132,17 @@ export class BattleScene {
         valueEl.textContent = Math.round(value);
         if (Math.abs(value - 50) > 25) shakeElement(this._container.querySelector('#momentum-bar'), 3, 300);
     }
-    _updateScoreboard() {
-        const bs = this._battleSystem;
-        this._container.querySelector('#kills-my').textContent = bs.kills.my;
-        this._container.querySelector('#kills-enemy').textContent = bs.kills.enemy;
-        this._container.querySelector('#towers-my').textContent = bs.towers.my;
-        this._container.querySelector('#towers-enemy').textContent = bs.towers.enemy;
-        this._container.querySelector('#gold-my').textContent = bs.gold.my;
-        this._container.querySelector('#gold-enemy').textContent = bs.gold.enemy;
+    _updateScoreboard(bs) {
+        const s = bs || this._cardBattle;
+        if (!s) return;
+        this._container.querySelector('#kills-my').textContent = s.kills.my;
+        this._container.querySelector('#kills-enemy').textContent = s.kills.enemy;
+        this._container.querySelector('#towers-my').textContent = s.towers.my;
+        this._container.querySelector('#towers-enemy').textContent = s.towers.enemy;
+        this._container.querySelector('#gold-my').textContent = s.gold.my;
+        this._container.querySelector('#gold-enemy').textContent = s.gold.enemy;
     }
-    async _comment(text) { const el = this._container.querySelector('#commentary-text'); if (el) await typeWriter(el, text, 25); }
+    async _comment(text) { const el = this._container.querySelector('#commentary-text'); if (el) await typeWriter(el, text, 20); }
     _fireDanmaku(text) {
         const layer = this._container.querySelector('#danmaku-layer'); if (!layer) return;
         const d = createElement('div', 'danmaku-item', text);
@@ -155,7 +155,7 @@ export class BattleScene {
     _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
     get _main() { return this._container.querySelector('#battle-main'); }
 
-    /* ====================== BP 阶段（KPL标准交替Ban/Pick） ====================== */
+    /* ====================== BP 阶段（保持原有逻辑） ====================== */
     async _startBP() {
         this._setRoundLabel('BP阶段');
         await this._comment('Ban/Pick阶段开始！');
@@ -195,652 +195,339 @@ export class BattleScene {
             this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, phase);
         };
 
-        /* ── (1) 蓝Ban1 → 红Ban1 → 蓝Ban1 → 红Ban1 ── */
-        await myBan('蓝方Ban — 第1个');     refresh('ban'); await this._sleep(200);
-        enemyBan();                          refresh('ban'); await this._sleep(300);
-        await myBan('蓝方Ban — 第2个');     refresh('ban'); await this._sleep(200);
-        enemyBan();                          refresh('ban'); await this._sleep(300);
+        await myBan('蓝方Ban — 第1个'); refresh('ban'); await this._sleep(200);
+        enemyBan(); refresh('ban'); await this._sleep(300);
+        await myBan('蓝方Ban — 第2个'); refresh('ban'); await this._sleep(200);
+        enemyBan(); refresh('ban'); await this._sleep(300);
         await this._comment(`第一轮Ban完成 — 蓝禁:${banned.my.join('/')} 红禁:${banned.enemy.join('/')}`);
 
-        /* ── (2) 蓝Pick1 → 红Pick2 → 蓝Pick2 → 红Pick1 ── */
-        await myPick(`${this._myTeam.shortName} 选择第1位`);                          refresh('pick'); await this._sleep(300);
-        enemyPick(); enemyPick();                                                       refresh('pick'); await this._sleep(400);
+        await myPick(`${this._myTeam.shortName} 选择第1位`); refresh('pick'); await this._sleep(300);
+        enemyPick(); enemyPick(); refresh('pick'); await this._sleep(400);
         await myPick(`${this._myTeam.shortName} 选择第2位`); refresh('pick'); await this._sleep(200);
         await myPick(`${this._myTeam.shortName} 选择第3位`); refresh('pick'); await this._sleep(300);
-        enemyPick();                                                                    refresh('pick'); await this._sleep(300);
-        await this._comment(`第一轮Pick完成 — 双方各选3位英雄`);
+        enemyPick(); refresh('pick'); await this._sleep(300);
+        await this._comment('第一轮Pick完成');
 
-        /* ── (3) 红Ban1 → 蓝Ban1 → 红Ban1 → 蓝Ban1 ── */
-        enemyBan();                          refresh('ban'); await this._sleep(300);
+        enemyBan(); refresh('ban'); await this._sleep(300);
         await myBan('蓝方追加Ban — 第3个'); refresh('ban'); await this._sleep(200);
-        enemyBan();                          refresh('ban'); await this._sleep(300);
+        enemyBan(); refresh('ban'); await this._sleep(300);
         await myBan('蓝方追加Ban — 第4个'); refresh('ban'); await this._sleep(200);
-        enemyBan();                          refresh('ban'); await this._sleep(200);
+        enemyBan(); refresh('ban'); await this._sleep(200);
         await this._comment(`第二轮Ban完成 — 共禁用${allBanned().length}位英雄`);
 
-        /* ── (4) 红Pick1 → 蓝Pick2 → 红Pick1 ── */
-        enemyPick();                                                                    refresh('pick'); await this._sleep(300);
+        enemyPick(); refresh('pick'); await this._sleep(300);
         await myPick(`${this._myTeam.shortName} 选择第4位`); refresh('pick'); await this._sleep(200);
         await myPick(`${this._myTeam.shortName} 选择第5位`); refresh('pick'); await this._sleep(300);
-        enemyPick();                                                                    refresh('pick'); await this._sleep(300);
+        enemyPick(); refresh('pick'); await this._sleep(300);
 
         const bpResult = this._battleSystem.resolveBP(banned.my, picks.my, banned.enemy, picks.enemy);
+        this._bpResult = bpResult;
         this._updateMomentum(this._battleSystem.momentum);
 
         main.innerHTML = this._renderBPResult(bpResult, picks, banned, myPickRoles, enemyPickRoles);
-        await new Promise(res => main.querySelector('#btn-start-match').addEventListener('click', () => { sfxBattleStart(); startBGM('battle'); res(); }));
-        this._startRound1();
+        await new Promise(res => main.querySelector('#btn-start-match').addEventListener('click', () => {
+            sfxBattleStart(); startBGM('battle'); res();
+        }));
+
+        this._startCardBattle();
     }
 
-    _getEnemyBanCandidates(bpCtx, bannedList) {
-        return bpCtx.my.flatMap(c => c.heroes.map(h => h.name)).filter(h => !bannedList.includes(h));
-    }
+    /* ====================== 卡牌对战主循环 ====================== */
+    async _startCardBattle() {
+        this._cardBattle = new CardBattleSystem(
+            this._myTeam, this._enemyTeam,
+            this._myStarters, this._enemyStarters,
+            this._bpResult,
+            { morale: game.state.team?.morale || 70 }
+        );
 
-    _autoEnemyPick(bpCtx, bannedList, pickedList, enemyPickRoles, roles) {
-        const unavailable = new Set([...bannedList, ...pickedList]);
-        const remainRoles = roles.filter(r => !enemyPickRoles.includes(r));
-        const role = remainRoles.length > 0 ? remainRoles[0] : roles[0];
-        const ctx = bpCtx.enemy.find(c => c.role === role);
-        const pool = (ctx?.heroes || []).map(h => h.name).filter(h => !unavailable.has(h));
-        const hero = pool.length > 0 ? pool[0] : (Object.keys(HEROES).find(h => !unavailable.has(h)) || '赵云');
-        return { hero, role };
-    }
-
-    _renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, phase) {
-        const isBan = phase === 'ban';
-        const wr = estimateWinRate(picks.my, picks.enemy, myPickRoles, enemyPickRoles);
-
-        const banSlots = (list) => {
-            let html = '';
-            for (let i = 0; i < 5; i++) {
-                html += list[i]
-                    ? `<span class="bp-ban-slot bp-ban-slot--filled">${this._heroCard(list[i], 28, false)}</span>`
-                    : `<span class="bp-ban-slot"></span>`;
-            }
-            return html;
-        };
-
-        const pickSlots = (pickList, roleList) => {
-            let html = '';
-            for (let i = 0; i < 5; i++) {
-                const h = pickList[i];
-                const r = roleList[i];
-                html += `<div class="bp-pick-slot ${h ? 'bp-pick-slot--filled' : ''}">${h ? this._heroCard(h, 42) : `<span class="bp-pick-placeholder">${r || '?'}</span>`}${r ? `<span class="bp-pick-role-tag">${r}</span>` : ''}</div>`;
-            }
-            return html;
-        };
-
-        const wrColor = wr.my > 55 ? 'var(--color-success)' : wr.my < 45 ? 'var(--color-danger)' : 'var(--color-text-dim)';
-        const wrEnemyColor = wr.enemy > 55 ? 'var(--color-danger)' : wr.enemy < 45 ? 'var(--color-success)' : 'var(--color-text-dim)';
-        const hasPicks = picks.my.length > 0 || picks.enemy.length > 0;
-
-        main.innerHTML = `<div class="bp-board">
-            <div class="bp-board__header">
-                <div class="bp-board__team bp-board__team--blue">
-                    <div class="bp-board__team-name">${teamLogoHTML(this._myTeam.id, this._myTeam, 24)} ${this._myTeam.shortName}</div>
-                    <div class="bp-board__bans">${banSlots(banned.my)}</div>
-                    <div class="bp-board__picks">${pickSlots(picks.my, myPickRoles)}</div>
-                </div>
-                <div class="bp-board__center">
-                    <div class="bp-board__phase" id="bp-phase-label">${isBan ? '禁用阶段' : '选人阶段'}</div>
-                    <div class="bp-board__step" id="bp-status"></div>
-                    ${hasPicks ? `<div class="bp-winrate" id="bp-winrate">
-                        <div class="bp-winrate__bar">
-                            <div class="bp-winrate__fill bp-winrate__fill--my" style="width:${wr.my}%"></div>
-                        </div>
-                        <div class="bp-winrate__labels">
-                            <span class="bp-winrate__label" style="color:${wrColor}">${this._myTeam.shortName} ${wr.my}%</span>
-                            <span class="bp-winrate__vs">预估胜率</span>
-                            <span class="bp-winrate__label" style="color:${wrEnemyColor}">${wr.enemy}% ${this._enemyTeam.shortName}</span>
-                        </div>
-                    </div>` : ''}
-                </div>
-                <div class="bp-board__team bp-board__team--red">
-                    <div class="bp-board__team-name">${this._enemyTeam.shortName} ${teamLogoHTML(this._enemyTeam.id, this._enemyTeam, 24)}</div>
-                    <div class="bp-board__bans">${banSlots(banned.enemy)}</div>
-                    <div class="bp-board__picks">${pickSlots(picks.enemy, enemyPickRoles)}</div>
-                </div>
-            </div>
-            <div class="bp-board__body">
-                <div class="bp-board__select" id="bp-select-area"></div>
-                <div class="bp-board__coach" id="bp-coach-panel">
-                    <div class="coach-header">
-                        <span class="coach-icon">🎙️</span>
-                        <span class="coach-title">AI 教练</span>
-                        <button class="coach-config-btn" id="coach-config-btn" title="配置AI模型">⚙️</button>
-                    </div>
-                    <div class="coach-content" id="coach-content">
-                        <div class="coach-loading">分析中...</div>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-
-        this._updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase);
-        this._bindCoachConfig();
-    }
-
-    async _updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase) {
-        const panel = this._container.querySelector('#coach-content');
-        if (!panel) return;
-        panel.innerHTML = '<div class="coach-loading"><span class="coach-typing"></span> 分析中...</div>';
-
-        const ctx = {
-            phase,
-            myBans: banned.my,
-            enemyBans: banned.enemy,
-            myPicks: picks.my,
-            enemyPicks: picks.enemy,
-            myPickRoles,
-            enemyPickRoles,
-            myTeamName: this._myTeam.shortName,
-            enemyTeamName: this._enemyTeam.shortName,
-            enemyStarters: this._enemyStarters,
-            stepLabel: this._container.querySelector('#bp-status')?.textContent || '',
-        };
-
-        try {
-            const text = await getCoachAnalysis(ctx);
-            if (!panel.isConnected) return;
-            panel.innerHTML = _formatCoachText(text);
-        } catch (e) {
-            panel.innerHTML = '<div class="coach-error">分析生成失败</div>';
+        for (let i = 0; i < this._cardBattle.totalRounds; i++) {
+            if (this._cardBattle.gameOver) break;
+            const roundData = this._cardBattle.startRound();
+            await this._playRound(roundData);
         }
+
+        if (!this._cardBattle.gameOver) {
+            await this._playFinale();
+        }
+
+        await this._showFinalResult();
     }
 
-    _bindCoachConfig() {
-        const btn = this._container.querySelector('#coach-config-btn');
-        if (!btn) return;
-        btn.addEventListener('click', () => {
-            const config = getCoachConfig();
-            const panel = this._container.querySelector('#coach-content');
-            if (!panel) return;
-            panel.innerHTML = `
-                <div class="coach-config">
-                    <p class="coach-config__desc">配置大模型API后，AI教练将提供更智能的分析（支持 DeepSeek、OpenAI 等兼容接口）</p>
-                    <label>API 地址</label>
-                    <input type="text" id="coach-api-url" value="${config.apiUrl || 'https://api.deepseek.com/v1/chat/completions'}" placeholder="https://api.deepseek.com/v1/chat/completions"/>
-                    <label>API Key</label>
-                    <input type="password" id="coach-api-key" value="${config.apiKey || ''}" placeholder="sk-..."/>
-                    <label>模型名称</label>
-                    <input type="text" id="coach-model" value="${config.model || 'deepseek-chat'}" placeholder="deepseek-chat"/>
-                    <div class="coach-config__actions">
-                        <button class="btn btn--sm" id="coach-save">保存</button>
-                        <button class="btn btn--sm btn--outline" id="coach-cancel">取消</button>
+    async _playRound(roundData) {
+        const { round, phaseLabel, ap, event } = roundData;
+        this._setRoundLabel(`第${round}轮 · ${phaseLabel}`);
+        this._updateTimer(round * 3);
+
+        if (event) {
+            await this._comment(`${event.icon} ${event.name}：${event.desc}`);
+            this._fireDanmaku(`${event.icon} ${event.name}！`);
+            await this._sleep(1000);
+        }
+
+        const main = this._main;
+        const cbs = this._cardBattle;
+
+        // 渲染对战界面
+        const commandSlots = [];
+        let currentAP = cbs.currentAP;
+
+        const render = () => {
+            main.innerHTML = `<div class="card-battle">
+                <div class="cb-layout">
+                    <div class="cb-left">
+                        <div class="cb-map-wrap">
+                            ${createMobaMapSVG(cbs.lanes, { baronAlive: cbs.baronAlive, lordAlive: cbs.lordAlive, showLordPlaceholder: round >= 5 })}
+                        </div>
+                        <div class="cb-coach" id="cb-coach">
+                            <div class="cb-coach__header">🎙️ AI教练</div>
+                            <div class="cb-coach__body" id="cb-coach-body">
+                                ${cbs.getCoachAdvice().map(t => `<div class="cb-coach__tip">${t}</div>`).join('')}
+                            </div>
+                        </div>
                     </div>
-                </div>`;
-            panel.querySelector('#coach-save').addEventListener('click', () => {
-                saveCoachConfig({
-                    apiUrl: panel.querySelector('#coach-api-url').value.trim(),
-                    apiKey: panel.querySelector('#coach-api-key').value.trim(),
-                    model: panel.querySelector('#coach-model').value.trim(),
-                });
-                panel.innerHTML = '<div class="coach-success">✅ 配置已保存，下次操作时生效</div>';
-            });
-            panel.querySelector('#coach-cancel').addEventListener('click', () => {
-                panel.innerHTML = '<div class="coach-loading">等待下一步操作...</div>';
-            });
-        });
-    }
-
-    _updateBPStatus(main, text) {
-        const el = main.querySelector('#bp-status');
-        if (el) el.textContent = text;
-    }
-
-    _heroCard(heroName, size = 40, showName = true) {
-        const hero = getHero(heroName);
-        if (!hero) return `<span class="bp-hero-mini">${heroName}</span>`;
-        const roleInfo = HERO_ROLES[hero.role];
-        return `<span class="bp-hero-card" title="${heroName} - ${roleInfo?.name || ''}">
-            ${heroImgHTML(hero.id, heroName, size)}
-            ${showName ? `<span class="bp-hero-card__name">${heroName}</span>` : ''}
-        </span>`;
-    }
-
-    _buildHeroTabsAndGrid(candidates, recSet, enemyPicks, defaultType = 'warrior') {
-        const grouped = { warrior: [], mage: [], tank: [], assassin: [], marksman: [], support: [] };
-        candidates.forEach(name => {
-            const hero = getHero(name);
-            if (!hero) return;
-            if (grouped[hero.role]) grouped[hero.role].push(name);
-        });
-
-        const roleOrder = ['warrior', 'mage', 'assassin', 'tank', 'marksman', 'support'];
-        const tabs = roleOrder.map(role => {
-            const ri = HERO_ROLES[role];
-            const count = grouped[role].length;
-            return `<button class="bp-type-tab ${role === defaultType ? 'bp-type-tab--active' : ''}" data-type="${role}" style="--tab-color:${ri.color}">
-                ${ri.icon} ${ri.name}<span class="bp-type-tab__count">${count}</span>
-            </button>`;
-        }).join('');
-
-        const panels = roleOrder.map(role => {
-            const heroes = grouped[role];
-            return `<div class="bp-type-panel ${role === defaultType ? 'bp-type-panel--active' : ''}" data-panel="${role}">
-                ${heroes.length ? heroes.map(name => {
-                    const hero = getHero(name);
-                    const isRec = recSet.has(name);
-                    const ci = getCounterInfo(name);
-                    const countersEnemy = enemyPicks.filter(ep => ci.counters.includes(ep));
-                    return `<button class="bp-hero-btn ${isRec ? 'bp-hero-btn--recommended' : ''}" data-hero="${name}">
-                        <span class="bp-hero-btn__avatar">${hero ? heroImgHTML(hero.id, name, 56) : ''}</span>
-                        <span class="bp-hero-btn__name">${name}</span>
-                        ${isRec ? '<span class="bp-hero-btn__rec">荐</span>' : ''}
-                        ${countersEnemy.length ? `<span class="bp-hero-btn__counter">克${countersEnemy[0]}</span>` : ''}
-                    </button>`;
-                }).join('') : '<div class="bp-type-empty">该分类暂无可选英雄</div>'}
-            </div>`;
-        }).join('');
-
-        return `<div class="bp-type-tabs">${tabs}</div><div class="bp-type-panels">${panels}</div>`;
-    }
-
-    _bindHeroTabEvents(container, onHeroClick) {
-        const tabs = container.querySelectorAll('.bp-type-tab');
-        const panels = container.querySelectorAll('.bp-type-panel');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('bp-type-tab--active'));
-                panels.forEach(p => p.classList.remove('bp-type-panel--active'));
-                tab.classList.add('bp-type-tab--active');
-                const panel = container.querySelector(`[data-panel="${tab.dataset.type}"]`);
-                if (panel) panel.classList.add('bp-type-panel--active');
-            });
-        });
-        container.querySelectorAll('.bp-hero-btn').forEach(btn => {
-            btn.addEventListener('click', () => onHeroClick(btn.dataset.hero));
-        });
-    }
-
-    async _bpSelectHero(main, bpCtx, phase, bannedList, pickedList, picks) {
-        const selectArea = main.querySelector('#bp-select-area');
-        if (!selectArea) return '赵云';
-
-        const unavailable = new Set([...bannedList, ...pickedList]);
-        const allHeroNames = Object.keys(HEROES).filter(h => !unavailable.has(h));
-        if (allHeroNames.length === 0) return '赵云';
-
-        const banRecs = this._battleSystem.getRecommendedBan(this._enemyStarters);
-        const recSet = new Set(banRecs.map(r => r.hero));
-
-        selectArea.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, recSet, picks.enemy);
-
-        return new Promise(res => {
-            this._bindHeroTabEvents(selectArea, hero => res(hero));
-        });
-    }
-
-    async _bpPickWithRole(main, bpCtx, bannedList, pickedList, picks, myPickRoles, roles) {
-        const selectArea = main.querySelector('#bp-select-area');
-        if (!selectArea) return { hero: '赵云', role: '打野' };
-
-        const unavailable = new Set([...bannedList, ...pickedList]);
-        const remainRoles = roles.filter(r => !myPickRoles.includes(r));
-        let currentRole = remainRoles[0] || roles[0];
-
-        const allHeroNames = Object.keys(HEROES).filter(h => !unavailable.has(h));
-        const recsForRole = this._battleSystem.getHeroRecommendation(currentRole, bannedList, picks.my, picks.enemy);
-        const recSet = new Set(recsForRole.map(r => r.name));
-
-        const roleTabsHTML = `<div class="bp-role-tabs">
-            <span class="bp-role-tab-hint">为哪个位置选人？</span>
-            ${remainRoles.map((r, i) => `<button class="bp-role-tab ${i===0?'bp-role-tab--active':''}" data-role="${r}">${r}</button>`).join('')}
-        </div>`;
-
-        selectArea.innerHTML = `${roleTabsHTML}<div id="bp-grid-container">${this._buildHeroTabsAndGrid(allHeroNames, recSet, picks.enemy)}</div>`;
-
-        let resolveHero;
-        const heroPromise = new Promise(res => { resolveHero = res; });
-
-        const gridContainer = selectArea.querySelector('#bp-grid-container');
-        this._bindHeroTabEvents(gridContainer, hero => resolveHero(hero));
-
-        selectArea.querySelectorAll('.bp-role-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                selectArea.querySelectorAll('.bp-role-tab').forEach(t => t.classList.remove('bp-role-tab--active'));
-                tab.classList.add('bp-role-tab--active');
-                currentRole = tab.dataset.role;
-                const newRecs = this._battleSystem.getHeroRecommendation(currentRole, bannedList, picks.my, picks.enemy);
-                const newRecSet = new Set(newRecs.map(r => r.name));
-                gridContainer.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, newRecSet, picks.enemy);
-                this._bindHeroTabEvents(gridContainer, hero => resolveHero(hero));
-            });
-        });
-
-        const hero = await heroPromise;
-        return { hero, role: currentRole };
-    }
-
-    _renderBPResult(bpResult, picks, banned, myPickRoles, enemyPickRoles) {
-        const wr = estimateWinRate(picks.my, picks.enemy, myPickRoles, enemyPickRoles);
-        const wrColor = wr.my > 55 ? 'var(--color-success)' : wr.my < 45 ? 'var(--color-danger)' : '#ffc107';
-        const wrStatus = wr.my > 60 ? '🔥 大优势' : wr.my > 55 ? '✅ 小优势' : wr.my >= 45 ? '⚖️ 均势' : wr.my >= 40 ? '⚠️ 小劣势' : '🚨 大劣势';
-
-        return `<div class="round-panel bp-result">
-            <h3 class="round-title">BP阶段完成</h3>
-            <div class="bp-result__winrate">
-                <div class="bp-result__winrate-bar">
-                    <div class="bp-result__winrate-fill" style="width:${wr.my}%;background:${wrColor}"></div>
+                    <div class="cb-right">
+                        ${renderEnemyCards(cbs.enemyHand.length, cbs.revealedEnemyCards)}
+                        ${renderCommandZone(commandSlots, 3)}
+                        ${renderHandArea(cbs.myHand, currentAP, 5)}
+                        <button class="btn btn--gold btn--large cb-confirm" id="btn-confirm-round" ${commandSlots.length === 0 ? 'disabled' : ''}>
+                            确认出牌 ⚔️
+                        </button>
+                    </div>
                 </div>
-                <div class="bp-result__winrate-labels">
-                    <span style="color:${wrColor};font-weight:700;font-size:18px">${this._myTeam.shortName} ${wr.my}%</span>
-                    <span class="bp-result__winrate-status">${wrStatus}</span>
-                    <span style="color:var(--color-danger);font-weight:700;font-size:18px">${wr.enemy}% ${this._enemyTeam.shortName}</span>
-                </div>
-            </div>
-            <div class="bp-result__lineup">
-                <div class="bp-result__side bp-result__side--my">
-                    <h4>${this._myTeam.shortName}</h4>
-                    <div class="bp-result__heroes">${picks.my.map((h, i) => `<div class="bp-result__hero">${this._heroCard(h, 44)}<span class="bp-result__role">${myPickRoles[i] || ''}</span></div>`).join('')}</div>
-                    <div class="bp-result__eval">配合度 ${bpResult.myComp.synergy} | ${bpResult.myComp.desc}</div>
-                </div>
-                <div class="bp-result__vs">VS</div>
-                <div class="bp-result__side bp-result__side--enemy">
-                    <h4>${this._enemyTeam.shortName}</h4>
-                    <div class="bp-result__heroes">${picks.enemy.map((h, i) => `<div class="bp-result__hero">${this._heroCard(h, 44)}<span class="bp-result__role">${enemyPickRoles[i] || ''}</span></div>`).join('')}</div>
-                    <div class="bp-result__eval">配合度 ${bpResult.enemyComp.synergy} | ${bpResult.enemyComp.desc}</div>
-                </div>
-            </div>
-            <div class="bp-result__banned">禁用: ${[...banned.my, ...banned.enemy].map(h => `<span class="bp-ban-tag">🚫${h}</span>`).join(' ')}</div>
-            <div class="bp-momentum-shift">BP阵容优势: <strong style="color:${bpResult.bpMomentum>=0?'var(--color-success)':'var(--color-danger)'}">${bpResult.bpMomentum>=0?'+':''}${bpResult.bpMomentum}</strong> 势能</div>
-            <button class="btn btn--gold btn--large" id="btn-start-match">开始比赛 ⚔️</button>
-        </div>`;
-    }
-
-    /* ====================== 回合1: 对线期（增强信息） ====================== */
-    async _startRound1() {
-        this._setRoundLabel('回合1 · 对线期');
-        this._updateTimer(0);
-        await this._comment('比赛开始！进入对线期，请分配「指挥官的祝福」！');
-        this._fireDanmaku('比赛开始了！加油！');
-
-        const analysis = this._battleSystem.getLaningAnalysis();
-        const main = this._main;
-        main.innerHTML = `
-            <div class="round-panel">
-                <h3 class="round-title">回合 1 · 对线期</h3>
-                <p class="round-desc">将3点「指挥官的祝福」🌟 分配到三条路上<br><span style="font-size:11px;color:var(--color-text-dim)">作为战队指挥官，你的鼓舞能让选手超常发挥</span></p>
-                <div class="lane-allocation">
-                    ${['top','mid','bot'].map(lane => {
-                        const a = analysis[lane];
-                        if (!a) return '';
-                        const diffColor = a.diff > 3 ? 'var(--color-success)' : a.diff < -3 ? 'var(--color-danger)' : 'var(--color-text-dim)';
-                        const prioClass = a.priority === 'high' ? 'lane-prio--high' : a.priority === 'medium' ? 'lane-prio--medium' : 'lane-prio--low';
-                        return `<div class="lane-row" data-lane="${lane}">
-                            <div class="lane-row__info">
-                                <span class="lane-row__label">${({top:'上路',mid:'中路',bot:'下路'})[lane]}</span>
-                                <span class="lane-row__matchup">
-                                    ${playerAvatarHTML(a.myPlayer, this._myTeam.color, 24)}
-                                    <strong>${a.myPlayer.id}</strong>
-                                    <span class="vs-text">vs</span>
-                                    <strong>${a.enemyPlayer.id}</strong>
-                                    ${playerAvatarHTML(a.enemyPlayer, this._enemyTeam.color, 24)}
-                                </span>
-                                <div class="lane-row__detail">
-                                    <span class="lane-stat" style="color:${diffColor}">对线: ${a.myPlayer.stats['对线']} vs ${a.enemyPlayer.stats['对线']} (${a.diff>0?'+':''}${a.diff})</span>
-                                    <span class="lane-hint ${prioClass}">${a.hint}</span>
-                                </div>
-                            </div>
-                            <div class="lane-row__controls">
-                                <button class="btn btn--small lane-minus" data-lane="${lane}">−</button>
-                                <span class="lane-row__stars" id="stars-${lane}">0</span>
-                                <button class="btn btn--small lane-plus" data-lane="${lane}">+</button>
-                            </div>
-                        </div>`;
-                    }).join('')}
-                </div>
-                <div class="round-remaining">剩余祝福: <span id="remaining-stars">3</span> 🌟</div>
-                <button class="btn btn--gold btn--large" id="btn-confirm-laning" disabled>确认分配</button>
             </div>`;
 
-        const alloc = {top:0,mid:0,bot:0};
-        const update = () => {
-            const rem = 3-alloc.top-alloc.mid-alloc.bot;
-            ['top','mid','bot'].forEach(l => { main.querySelector(`#stars-${l}`).textContent = '⭐'.repeat(alloc[l])||'0'; });
-            main.querySelector('#remaining-stars').textContent = rem;
-            main.querySelector('#btn-confirm-laning').disabled = rem !== 0;
+            this._bindCardInteractions(main, cbs, commandSlots, currentAP, render);
         };
-        main.querySelectorAll('.lane-plus').forEach(b => b.addEventListener('click', () => { const l=b.dataset.lane; if(3-alloc.top-alloc.mid-alloc.bot>0&&alloc[l]<3){alloc[l]++;update();} }));
-        main.querySelectorAll('.lane-minus').forEach(b => b.addEventListener('click', () => { const l=b.dataset.lane; if(alloc[l]>0){alloc[l]--;update();} }));
 
-        await new Promise(res => {
-            main.querySelector('#btn-confirm-laning').addEventListener('click', async () => {
-                const result = this._battleSystem.resolveLaningPhase(alloc);
-                this._updateMomentum(result.momentum); this._updateScoreboard(); this._updateTimer(4);
-                main.innerHTML = `<div class="round-result"><h3>对线期结算</h3>
-                    ${Object.entries(result.results).map(([,r])=>`<div class="lane-result lane-result--${r.advantage>0?'win':r.advantage<0?'lose':'draw'}">
-                        <span class="lane-result__icon">${r.advantage>0?'✅':r.advantage<0?'❌':'➖'}</span><span>${r.desc}</span></div>`).join('')}
-                </div>`;
-                await this._comment(Object.values(result.results)[0].desc);
-                await this._sleep(2000); res();
+        render();
+
+        // 等待玩家确认出牌
+        const playedCards = await new Promise(resolve => {
+            const waitForConfirm = () => {
+                const btn = main.querySelector('#btn-confirm-round');
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        sfxConfirm();
+                        resolve(commandSlots.map(s => ({ card: s.card, targetLane: s.targetLane })));
+                    });
+                }
+            };
+            waitForConfirm();
+            this._onReRender = waitForConfirm;
+        });
+
+        // 结算回合
+        const result = cbs.resolveRound(playedCards);
+        this._updateMomentum(result.momentum);
+        this._updateScoreboard(cbs);
+
+        // 显示结算动画
+        await this._showRoundResult(result);
+    }
+
+    _bindCardInteractions(main, cbs, commandSlots, currentAP, reRender) {
+        // 手牌点击 -> 出牌
+        main.querySelectorAll('#hand-cards .card').forEach(cardEl => {
+            cardEl.addEventListener('click', () => {
+                const uid = cardEl.dataset.uid;
+                const card = cbs.myHand.find(c => c.uid === uid);
+                if (!card) return;
+
+                const check = cbs.canPlayCard(card);
+                if (!check.ok) {
+                    cardEl.classList.add('card--shake');
+                    setTimeout(() => cardEl.classList.remove('card--shake'), 400);
+                    return;
+                }
+
+                if (card.target === 'choose') {
+                    this._showLaneSelector(main, (lane) => {
+                        if (card.cost <= currentAP) {
+                            currentAP -= card.cost;
+                            if (card.bonusAP) currentAP += card.bonusAP;
+                            commandSlots.push({ card, targetLane: lane });
+                            reRender();
+                            if (this._onReRender) this._onReRender();
+                        }
+                    });
+                    return;
+                }
+
+                if (card.cost <= currentAP) {
+                    currentAP -= card.cost;
+                    if (card.bonusAP) currentAP += card.bonusAP;
+                    commandSlots.push({ card, targetLane: null });
+                    sfxCardPlay();
+                    reRender();
+                    if (this._onReRender) this._onReRender();
+                }
+            });
+
+            // 双击弃牌
+            cardEl.addEventListener('dblclick', () => {
+                const uid = cardEl.dataset.uid;
+                const card = cbs.myHand.find(c => c.uid === uid);
+                if (card) {
+                    cbs.discard(card);
+                    sfxDiscard();
+                    reRender();
+                    if (this._onReRender) this._onReRender();
+                }
             });
         });
-        this._startRound2();
+
+        // 指令区移除
+        main.querySelectorAll('.cmd-slot__remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.idx);
+                const removed = commandSlots.splice(idx, 1)[0];
+                if (removed) {
+                    currentAP += removed.card.cost;
+                    if (removed.card.bonusAP) currentAP -= removed.card.bonusAP;
+                    cbs.myHand.push(removed.card);
+                }
+                reRender();
+                if (this._onReRender) this._onReRender();
+            });
+        });
     }
 
-    /* ====================== 回合2: 野区博弈（信息透明） ====================== */
-    async _startRound2() {
-        this._setRoundLabel('回合2 · 野区博弈');
-        this._updateTimer(5);
-        await this._comment('进入野区博弈阶段！AI教练正在分析局势...');
+    _showLaneSelector(main, callback) {
+        const existing = main.querySelector('#lane-selector');
+        if (existing) existing.remove();
 
-        const analysis = this._battleSystem.getJungleAnalysis();
-        const main = this._main;
-
-        main.innerHTML = `<div class="round-panel">
-            <h3 class="round-title">回合 2 · 野区博弈</h3>
-            <div class="jungle-info">
-                <div class="jungle-matchup">
-                    <span>${analysis.myJungler?.id || '打野'} (综合${analysis.myStr})</span>
-                    <span class="vs-text">vs</span>
-                    <span>${analysis.enemyJungler?.id || '打野'} (综合${analysis.enStr})</span>
+        const overlay = document.createElement('div');
+        overlay.className = 'lane-selector-overlay';
+        overlay.id = 'lane-selector';
+        overlay.innerHTML = `
+            <div class="lane-selector">
+                <div class="lane-selector__title">选择目标路线</div>
+                <div class="lane-selector__options">
+                    <button class="lane-opt" data-lane="top">${LANES.top.icon} ${LANES.top.name}</button>
+                    <button class="lane-opt" data-lane="mid">${LANES.mid.icon} ${LANES.mid.name}</button>
+                    <button class="lane-opt" data-lane="bot">${LANES.bot.icon} ${LANES.bot.name}</button>
                 </div>
-                <div class="jungle-ai-suggest">🤖 AI建议: <strong>${analysis.aiSuggestion}</strong></div>
+            </div>`;
+        main.appendChild(overlay);
+
+        overlay.querySelectorAll('.lane-opt').forEach(btn => {
+            btn.addEventListener('click', () => {
+                overlay.remove();
+                callback(btn.dataset.lane);
+            });
+        });
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    }
+
+    async _showRoundResult(result) {
+        const main = this._main;
+        const settlements = result.settlements;
+
+        main.innerHTML = `<div class="round-result-panel">
+            <h3 class="round-result__title">第${result.round}轮结算</h3>
+            <div class="round-result__body">
+                <div class="round-result__map">
+                    ${createMobaMapSVG(result.lanes, { baronAlive: this._cardBattle.baronAlive, lordAlive: this._cardBattle.lordAlive })}
+                </div>
+                <div class="round-result__events">
+                    <div class="result-section">
+                        <h4>📋 对手出牌</h4>
+                        <div class="enemy-played">
+                            ${result.enemyActions.map(a => `<div class="enemy-action">
+                                <span class="enemy-action__icon">${CARD_TYPES[a.type]?.icon || '⚡'}</span>
+                                <span>${a.name}</span>
+                            </div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="result-section">
+                        <h4>⚔️ 结算结果</h4>
+                        ${renderSettlements(settlements)}
+                    </div>
+                    <div class="result-section result-lane-status">
+                        <h4>🗺️ 当前战况</h4>
+                        ${Object.entries(result.lanes).map(([lane, l]) => {
+                            const laneLabel = { top: '上路', mid: '中路', bot: '下路' }[lane];
+                            const myProg = 100 - l.progress;
+                            const color = myProg > 60 ? '#2ecc71' : myProg < 40 ? '#e74c3c' : '#f0c040';
+                            return `<div class="lane-status-row">
+                                <span class="lane-status__name">${laneLabel}</span>
+                                <div class="lane-status__bar"><div class="lane-status__fill" style="width:${myProg}%;background:${color}"></div></div>
+                                <span class="lane-status__value" style="color:${color}">${myProg}%</span>
+                                <span class="lane-status__towers">🏰${l.myTowers} vs ${l.enemyTowers}🏰</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
             </div>
-            <div class="jungle-choices">
-                ${Object.entries(analysis.choiceAnalysis).map(([id, ca]) => {
-                    const meta = {invade:{icon:'⚔️',name:'入侵野区'},dragon:{icon:'🐉',name:'抢暴君'},gank_top:{icon:'⬆️',name:'上路Gank'},gank_mid:{icon:'⏺️',name:'中路Gank'},gank_bot:{icon:'⬇️',name:'下路Gank'}}[id];
-                    const rateColor = ca.successRate >= 60 ? 'var(--color-success)' : ca.successRate >= 40 ? 'var(--color-warning)' : 'var(--color-danger)';
-                    return `<button class="jungle-choice jungle-choice--enhanced" data-choice="${id}">
-                        <span class="jungle-choice__icon">${meta.icon}</span>
-                        <span class="jungle-choice__name">${meta.name}</span>
-                        <span class="jungle-choice__rate" style="color:${rateColor}">成功率 ${ca.successRate}%</span>
-                        <span class="jungle-choice__hint">${ca.hint}</span>
-                        <span class="jungle-choice__rr">收益${ca.reward} / 风险${ca.risk}</span>
-                    </button>`;
-                }).join('')}
-            </div>
+            <button class="btn btn--gold btn--large" id="btn-next-round">${result.gameOver ? '查看结果' : '下一轮 →'}</button>
         </div>`;
 
-        await new Promise(res => {
-            main.querySelectorAll('.jungle-choice').forEach(btn => btn.addEventListener('click', async () => {
-                const result = this._battleSystem.resolveJunglePhase(btn.dataset.choice);
-                this._updateMomentum(result.momentum); this._updateScoreboard(); this._updateTimer(8);
-                main.innerHTML = `<div class="round-result round-result--${result.success?'success':'fail'}">
-                    <div class="result-big-icon">${result.success?'✅':'❌'}</div><h3>${result.desc}</h3></div>`;
-                await this._comment(result.desc);
-                if(result.success) this._fireDanmaku(`${result.jungler} 太强了！`); else this._fireDanmaku('可惜了...');
-                await this._sleep(2000); res();
-            }));
-        });
-        this._startRound3();
+        sfxCardReveal();
+        const killEvents = settlements.filter(s => s.type === 'kill' || s.type === 'ambush' || s.type === 'teamfight_win');
+        if (killEvents.length) setTimeout(() => sfxKill(), 300);
+        if (settlements.some(s => s.type === 'tower')) setTimeout(() => sfxTowerDestroy(), 500);
+        if (settlements.some(s => s.type === 'objective')) setTimeout(() => sfxObjective(), 400);
+
+        // 弹幕
+        for (const s of settlements.slice(0, 3)) {
+            this._fireDanmaku(s.desc);
+            await this._sleep(300);
+        }
+
+        if (settlements.length) {
+            await this._comment(settlements[0].desc);
+        }
+
+        await new Promise(res => main.querySelector('#btn-next-round')?.addEventListener('click', res));
     }
 
-    /* ====================== 回合3-5保持原逻辑 ====================== */
-    async _startRound3() {
-        this._setRoundLabel('回合3 · 中期团战');
-        this._updateTimer(12);
-        await this._comment('中期团战即将爆发！');
-        this._fireDanmaku('团战来了！');
+    async _playFinale() {
+        const cbs = this._cardBattle;
+        const m = cbs.momentum;
+        this._setRoundLabel('决胜轮');
+
         const main = this._main;
+        const status = m >= 60 ? '顺风' : m > 40 ? '均势' : '逆风';
+        const statusColor = m >= 60 ? '#2ecc71' : m > 40 ? '#f0c040' : '#e74c3c';
 
-        main.innerHTML = `<div class="round-panel"><h3 class="round-title">回合 3 · 中期团战</h3>
-            <p class="round-desc">在绿色区域按下「开团」！</p>
-            <div class="qte-ring"><svg viewBox="0 0 200 200" class="qte-ring__svg">
-                <circle cx="100" cy="100" r="85" class="qte-ring__track"/>
-                <circle cx="100" cy="100" r="85" class="qte-ring__zone" stroke-dasharray="80 454" stroke-dashoffset="-30"/>
-                <circle cx="100" cy="15" r="8" class="qte-ring__pointer" id="qte-pointer"/>
-            </svg><button class="btn btn--gold qte-btn" id="qte-btn">开团！</button></div></div>`;
-        const timingQuality = await this._runQTE();
-        if (timingQuality === 'perfect') sfxQTEPerfect();
-        await this._comment(timingQuality === 'perfect' ? '完美的开团时机！' : timingQuality === 'good' ? '不错的开团时机' : '开团时机不太好...');
-
-        const strats = Object.values(TF_STRATEGIES);
-        main.innerHTML = `<div class="round-panel strategy-duel">
-            <h3 class="round-title">选择团战策略</h3>
-            <div class="counter-triangle">
-                <div class="ct-label ct-label--top">🗡️ 集火后排</div>
-                <div class="ct-label ct-label--left">✂️ 切割战场</div>
-                <div class="ct-label ct-label--right">🛡️ 保护C位</div>
-                <svg viewBox="0 0 200 180" class="ct-svg">
-                    <polygon points="100,15 15,165 185,165" fill="none" stroke="var(--color-surface-light)" stroke-width="2"/>
-                    <text x="100" y="95" class="ct-arrow" text-anchor="middle" fill="var(--color-text-dim)" font-size="11">克制关系 ↻</text>
-                </svg>
+        main.innerHTML = `<div class="finale-panel">
+            <h2 class="finale-title">⚔️ 决胜时刻</h2>
+            <div class="finale-status">
+                <span>当前势能</span>
+                <span class="finale-momentum" style="color:${statusColor}">${Math.round(m)} — ${status}</span>
             </div>
-            <p class="round-desc">集火后排 克制 保护C位 | 保护C位 克制 切割战场 | 切割战场 克制 集火后排</p>
-            <div class="tf-strategies">${strats.map(s=>`<button class="tf-strategy" data-strategy="${s.id}">
-                <span class="tf-strategy__icon">${s.icon}</span><span class="tf-strategy__name">${s.name}</span>
-                <span class="tf-strategy__need">关联: ${s.statKey}</span></button>`).join('')}
-            </div></div>`;
-
-        const myStrategy = await new Promise(res => {
-            main.querySelectorAll('.tf-strategy').forEach(b => b.addEventListener('click', () => { b.classList.add('tf-strategy--selected'); res(b.dataset.strategy); }));
-        });
-
-        const result = this._battleSystem.resolveTeamfight(timingQuality, myStrategy);
-        const mySt = TF_STRATEGIES[result.myStrategy];
-        const enSt = TF_STRATEGIES[result.enemyStrategy];
-        const cr = result.counterResult;
-        const crClass = cr === 'my_win' ? 'duel--my-win' : cr === 'enemy_win' ? 'duel--enemy-win' : 'duel--neutral';
-        const crText = cr === 'my_win' ? '🎉 我方策略克制对手！' : cr === 'enemy_win' ? '💀 对方策略克制我方！' : '⚖️ 无克制关系';
-
-        main.innerHTML = `<div class="round-panel duel-reveal ${crClass}">
-            <h3 class="round-title">策略揭晓！</h3>
-            <div class="duel-cards">
-                <div class="duel-card duel-card--my"><div class="duel-card__label">${this._myTeam.shortName}</div><div class="duel-card__icon" id="my-reveal">${mySt.icon}</div><div class="duel-card__name">${mySt.name}</div></div>
-                <div class="duel-vs">VS</div>
-                <div class="duel-card duel-card--enemy"><div class="duel-card__label">${this._enemyTeam.shortName}</div><div class="duel-card__icon duel-card__icon--hidden" id="enemy-reveal">❓</div><div class="duel-card__name duel-card__name--hidden" id="enemy-name">???</div></div>
-            </div>
-            <div class="duel-result" id="duel-result" style="opacity:0">
-                <div class="duel-result__counter">${crText}</div>
-                <div class="duel-result__desc">${result.desc}</div>
-                <div class="duel-result__shift">势能变化: <strong style="color:${result.momentumShift>0?'var(--color-success)':'var(--color-danger)'}">${result.momentumShift>0?'+':''}${result.momentumShift}</strong></div>
-            </div></div>`;
-
-        await this._sleep(500);
-        await this._sleep(800);
-        const enReveal = main.querySelector('#enemy-reveal');
-        const enName = main.querySelector('#enemy-name');
-        if (enReveal) { enReveal.textContent = enSt.icon; enReveal.classList.remove('duel-card__icon--hidden'); }
-        if (enName) { enName.textContent = enSt.name; enName.classList.remove('duel-card__name--hidden'); }
-        await this._sleep(600);
-        const duelResult = main.querySelector('#duel-result');
-        if (duelResult) duelResult.style.opacity = '1';
-        if (cr === 'my_win') sfxCounterWin(); else if (cr === 'enemy_win') sfxCounterLose();
-        this._updateMomentum(result.momentum); this._updateScoreboard(); this._updateTimer(15);
-        await this._comment(result.desc);
-        await this._sleep(2500);
-        this._startRound4();
-    }
-
-    async _startRound4() {
-        this._setRoundLabel('回合4 · 宏观策略');
-        this._updateTimer(18);
-        await this._comment('后期关键节点！选择你的宏观策略！');
-        const main = this._main;
-        const cards = MACRO_STRATEGIES;
-        const counterDesc = cards.map(c => { const t = cards.find(x=>x.id===c.counters); return t ? `${c.icon}${c.name} 克 ${t.icon}${t.name}` : ''; }).filter(Boolean).join(' | ');
-
-        main.innerHTML = `<div class="round-panel strategy-duel">
-            <h3 class="round-title">回合 4 · 宏观策略对抗</h3>
-            <p class="round-desc counter-desc">${counterDesc}</p>
-            <div class="macro-cards">${cards.map(c=>`
-                <div class="strategy-card macro-card" data-id="${c.id}">
-                    <div class="strategy-card__icon">${c.icon}</div>
-                    <div class="strategy-card__name">${c.name}</div>
-                    <div class="strategy-card__desc">${c.desc}</div>
-                    <div class="strategy-card__risk">${c.riskText}</div>
-                    <div class="strategy-card__stats"><span class="card-stat card-stat--good">克制: +${c.reward}</span><span class="card-stat">平均: +${c.avgReward}</span></div>
-                    <div class="strategy-card__counter">克制 → ${cards.find(t=>t.id===c.counters)?.name||'?'}</div>
-                </div>`).join('')}
-            </div></div>`;
-
-        const myCardId = await new Promise(res => {
-            main.querySelectorAll('.macro-card').forEach(el => el.addEventListener('click', () => { main.querySelectorAll('.macro-card').forEach(e => e.classList.remove('strategy-card--selected')); el.classList.add('strategy-card--selected'); res(el.dataset.id); }));
-        });
-
-        const result = this._battleSystem.resolveMacroStrategy(myCardId);
-        const cr = result.counterResult;
-        const crClass = cr === 'my_win' ? 'duel--my-win' : cr === 'enemy_win' ? 'duel--enemy-win' : 'duel--neutral';
-        const crText = cr === 'my_win' ? '🎉 克制成功！' : cr === 'enemy_win' ? '💀 被克制！' : '⚖️ 无克制';
-
-        main.innerHTML = `<div class="round-panel duel-reveal ${crClass}">
-            <h3 class="round-title">策略揭晓！</h3>
-            <div class="duel-cards">
-                <div class="duel-card duel-card--my"><div class="duel-card__label">${this._myTeam.shortName}</div><div class="duel-card__icon">${result.myCard.icon}</div><div class="duel-card__name">${result.myCard.name}</div></div>
-                <div class="duel-vs">VS</div>
-                <div class="duel-card duel-card--enemy"><div class="duel-card__label">${this._enemyTeam.shortName}</div><div class="duel-card__icon duel-card__icon--hidden" id="r4-enemy-icon">❓</div><div class="duel-card__name duel-card__name--hidden" id="r4-enemy-name">???</div></div>
-            </div>
-            <div class="duel-result" id="r4-result" style="opacity:0">
-                <div class="duel-result__counter">${crText}</div><div class="duel-result__desc">${result.desc}</div>
-                <div class="duel-result__shift">势能变化: <strong style="color:${result.momentumShift>0?'var(--color-success)':result.momentumShift<0?'var(--color-danger)':'var(--color-text-dim)'}">${result.momentumShift>0?'+':''}${result.momentumShift}</strong></div>
-            </div></div>`;
-
-        await this._sleep(800);
-        const eIcon = main.querySelector('#r4-enemy-icon'); const eName = main.querySelector('#r4-enemy-name');
-        if (eIcon) { eIcon.textContent = result.enemyCard.icon; eIcon.classList.remove('duel-card__icon--hidden'); }
-        if (eName) { eName.textContent = result.enemyCard.name; eName.classList.remove('duel-card__name--hidden'); }
-        await this._sleep(600);
-        const rEl = main.querySelector('#r4-result'); if (rEl) rEl.style.opacity = '1';
-        this._updateMomentum(result.momentum); this._updateScoreboard(); this._updateTimer(22);
-        await this._comment(result.desc);
-        await this._sleep(2500);
-        this._startRound5();
-    }
-
-    async _startRound5() {
-        this._setRoundLabel('回合5 · 终局决战');
-        this._updateTimer(25);
-        const m = this._battleSystem.momentum;
-        const main = this._main;
-
-        main.innerHTML = `<div class="round-panel"><h3 class="round-title">回合 5 · 终局决战</h3>
-            <p class="round-desc">当前势能: <strong style="color:${m>=55?'var(--color-success)':m<=45?'var(--color-danger)':'var(--color-warning)'}">${Math.round(m)}</strong> — ${m>=55?'我方优势':m<=45?'局势危急':'局势焦灼'}</p>
-            ${m >= 60 ? `<p>我方优势明显，选择终结方式：</p>
+            <div class="finale-map">${createMobaMapSVG(cbs.lanes, { baronAlive: false, lordAlive: cbs.lordAlive })}</div>
+            ${m >= 60 ? `
+                <p class="finale-desc">我方优势明显！选择终结方式：</p>
                 <div class="finale-choices">
-                    <button class="btn btn--gold btn--large finale-btn" data-choice="push">🏰 强攻高地</button>
-                    <button class="btn btn--outline btn--large finale-btn" data-choice="safe">🛡️ 步步为营</button>
-                </div>` :
-            m >= 40 ? `<p>局势焦灼！做出关键抉择：</p>` :
-            `<p>需要绝境翻盘！抓住每一个机会：</p>`}
+                    <button class="finale-btn finale-btn--push" data-choice="push">🏰 强攻水晶<br><span>快速但有风险</span></button>
+                    <button class="finale-btn finale-btn--safe" data-choice="safe">🛡️ 步步为营<br><span>稳健推进</span></button>
+                </div>
+            ` : m > 40 ? `
+                <p class="finale-desc">局势焦灼！将进行最终团战决定胜负！</p>
+                <button class="btn btn--gold btn--large finale-fight" data-choice="fight">⚔️ 最终团战</button>
+            ` : `
+                <p class="finale-desc">形势危急！拼死一搏！</p>
+                <button class="btn btn--danger btn--large finale-fight" data-choice="desperate">🔥 绝境反击</button>
+            `}
         </div>`;
 
-        if (m >= 60) {
-            await new Promise(res => main.querySelectorAll('.finale-btn').forEach(b => b.addEventListener('click', async () => {
-                await this._showFinalResult(this._battleSystem.resolveFinale([b.dataset.choice])); res();
-            })));
-        } else if (m >= 40) {
-            const dec = await this._runQuickDecisions([
-                {text:'对方五人抱团推进，正面迎战？',yes:'迎战',no:'绕后'},
-                {text:'发现对方走位失误！集火？',yes:'集火',no:'保留技能'},
-            ]);
-            await this._showFinalResult(this._battleSystem.resolveFinale(dec));
-        } else {
-            const dec = await this._runQuickDecisions([
-                {text:'对方推高地，拼死一搏？',yes:'拼了！',no:'放弃',timeLimit:2000},
-                {text:'找到绝佳开团角度！',yes:'立即开团⚡',no:'再等等',timeLimit:2000},
-                {text:'对方走位失误！全力集火！',yes:'全力输出🔥',no:'先留技能',timeLimit:2000},
-            ]);
-            await this._showFinalResult(this._battleSystem.resolveFinale(dec));
-        }
+        const choice = await new Promise(res => {
+            main.querySelectorAll('[data-choice]').forEach(btn => {
+                btn.addEventListener('click', () => res(btn.dataset.choice));
+            });
+        });
+
+        const result = cbs.resolveFinale(choice);
+        this._finaleResult = result;
     }
 
-    async _showFinalResult(result) {
-        this._updateMomentum(result.momentum); this._updateScoreboard();
+    async _showFinalResult() {
+        const cbs = this._cardBattle;
+        const result = this._finaleResult || cbs.resolveFinale('safe');
         this._recordMatchResult(result);
 
-        const main = this._main;
         if (result.won) {
             game.state.team.gold += ECONOMY.MATCH_WIN_GOLD;
             game.state.team.fame += ECONOMY.MATCH_WIN_FAME;
@@ -858,18 +545,33 @@ export class BattleScene {
 
         const otherHTML = this._renderOtherResults();
         stopBGM();
+        const main = this._main;
+
         if (result.won) {
             sfxVictory(); setTimeout(() => sfxCheer(), 1200);
-            main.innerHTML = `<div class="round-result round-result--victory"><div class="victory-banner"><h2>🏆 VICTORY</h2><p>${this._myTeam.name} 赢得比赛！</p></div>
-                <div class="match-stats"><div class="match-stat">击杀 ${result.kills.my}:${result.kills.enemy}</div><div class="match-stat">推塔 ${result.towers.my}:${result.towers.enemy}</div><div class="match-stat">MVP: ${result.mvp?.id||'—'}</div></div>
-                ${otherHTML}<button class="btn btn--gold btn--large" id="btn-finish">返回基地</button></div>`;
-            await this._comment(`${this._myTeam.name} 赢得比赛！MVP: ${result.mvp?.id}！`);
+            main.innerHTML = `<div class="round-result round-result--victory">
+                <div class="victory-banner"><h2>🏆 VICTORY</h2><p>${this._myTeam.name} 赢得比赛！</p></div>
+                <div class="match-stats">
+                    <div class="match-stat">击杀 ${result.kills.my}:${result.kills.enemy}</div>
+                    <div class="match-stat">推塔 ${result.towers.my}:${result.towers.enemy}</div>
+                    <div class="match-stat">经济 ${result.gold.my}:${result.gold.enemy}</div>
+                    <div class="match-stat">MVP: ${result.mvp?.id || '—'}</div>
+                </div>
+                ${otherHTML}
+                <button class="btn btn--gold btn--large" id="btn-finish">返回基地</button>
+            </div>`;
         } else {
             sfxDefeat();
-            main.innerHTML = `<div class="round-result round-result--defeat"><div class="defeat-banner"><h2>DEFEAT</h2><p>${this._enemyTeam.name} 赢得比赛</p></div>
-                <div class="match-stats"><div class="match-stat">击杀 ${result.kills.my}:${result.kills.enemy}</div><div class="match-stat">推塔 ${result.towers.my}:${result.towers.enemy}</div></div>
-                ${otherHTML}<button class="btn btn--outline btn--large" id="btn-finish">返回基地</button></div>`;
-            await this._comment('胜败乃兵家常事，下次再来！');
+            main.innerHTML = `<div class="round-result round-result--defeat">
+                <div class="defeat-banner"><h2>DEFEAT</h2><p>${this._enemyTeam.name} 赢得比赛</p></div>
+                <div class="match-stats">
+                    <div class="match-stat">击杀 ${result.kills.my}:${result.kills.enemy}</div>
+                    <div class="match-stat">推塔 ${result.towers.my}:${result.towers.enemy}</div>
+                    <div class="match-stat">经济 ${result.gold.my}:${result.gold.enemy}</div>
+                </div>
+                ${otherHTML}
+                <button class="btn btn--outline btn--large" id="btn-finish">返回基地</button>
+            </div>`;
         }
         game.save();
         this._container.querySelector('#btn-finish')?.addEventListener('click', () => game.sceneManager.switchTo('home'));
@@ -897,34 +599,245 @@ export class BattleScene {
         game.state.seasonSystem = this._season.toSaveData();
     }
 
-    /* ========== 工具方法 ========== */
-    _runQTE() {
-        return new Promise(resolve => {
-            const pointer = this._container.querySelector('#qte-pointer');
-            const btn = this._container.querySelector('#qte-btn');
-            if (!pointer||!btn) { resolve('good'); return; }
-            let angle = 0, running = true;
-            const animate = () => { if (!running) return; angle = (angle + 3) % 360; const rad = (angle - 90) * Math.PI / 180; pointer.setAttribute('cx', 100 + 85 * Math.cos(rad)); pointer.setAttribute('cy', 100 + 85 * Math.sin(rad)); requestAnimationFrame(animate); };
-            animate();
-            btn.addEventListener('click', () => { running = false; const a = angle % 360; const q = (a>=60&&a<=120)?'perfect':(a>=30&&a<=150)?'good':'bad'; btn.textContent = q==='perfect'?'完美！':q==='good'?'不错':'偏了'; btn.className = `btn qte-btn qte-btn--${q}`; setTimeout(() => resolve(q), 800); });
-            setTimeout(() => { if(running){running=false;resolve('bad');} }, 5000);
+    /* ====================== BP 辅助方法（保持原有） ====================== */
+    _getEnemyBanCandidates(bpCtx, bannedList) {
+        return bpCtx.my.flatMap(c => c.heroes.map(h => h.name)).filter(h => !bannedList.includes(h));
+    }
+
+    _autoEnemyPick(bpCtx, bannedList, pickedList, enemyPickRoles, roles) {
+        const unavailable = new Set([...bannedList, ...pickedList]);
+        const remainRoles = roles.filter(r => !enemyPickRoles.includes(r));
+        const role = remainRoles.length > 0 ? remainRoles[0] : roles[0];
+        const ctx = bpCtx.enemy.find(c => c.role === role);
+        const pool = (ctx?.heroes || []).map(h => h.name).filter(h => !unavailable.has(h));
+        const hero = pool.length > 0 ? pool[0] : (Object.keys(HEROES).find(h => !unavailable.has(h)) || '赵云');
+        return { hero, role };
+    }
+
+    _renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, phase) {
+        const isBan = phase === 'ban';
+        const wr = estimateWinRate(picks.my, picks.enemy, myPickRoles, enemyPickRoles);
+        const hasPicks = picks.my.length > 0 || picks.enemy.length > 0;
+        const wrColor = wr.my > 55 ? 'var(--color-success)' : wr.my < 45 ? 'var(--color-danger)' : 'var(--color-text-dim)';
+        const wrEnemyColor = wr.enemy > 55 ? 'var(--color-danger)' : wr.enemy < 45 ? 'var(--color-success)' : 'var(--color-text-dim)';
+
+        const banSlots = (list) => {
+            let html = '';
+            for (let i = 0; i < 5; i++) {
+                html += list[i]
+                    ? `<span class="bp-ban-slot bp-ban-slot--filled">${this._heroCard(list[i], 28, false)}</span>`
+                    : `<span class="bp-ban-slot"></span>`;
+            }
+            return html;
+        };
+        const pickSlots = (pickList, roleList) => {
+            let html = '';
+            for (let i = 0; i < 5; i++) {
+                const h = pickList[i]; const r = roleList[i];
+                html += `<div class="bp-pick-slot ${h ? 'bp-pick-slot--filled' : ''}">${h ? this._heroCard(h, 42) : `<span class="bp-pick-placeholder">${r || '?'}</span>`}${r ? `<span class="bp-pick-role-tag">${r}</span>` : ''}</div>`;
+            }
+            return html;
+        };
+
+        main.innerHTML = `<div class="bp-board">
+            <div class="bp-board__header">
+                <div class="bp-board__team bp-board__team--blue">
+                    <div class="bp-board__team-name">${teamLogoHTML(this._myTeam.id, this._myTeam, 24)} ${this._myTeam.shortName}</div>
+                    <div class="bp-board__bans">${banSlots(banned.my)}</div>
+                    <div class="bp-board__picks">${pickSlots(picks.my, myPickRoles)}</div>
+                </div>
+                <div class="bp-board__center">
+                    <div class="bp-board__phase" id="bp-phase-label">${isBan ? '禁用阶段' : '选人阶段'}</div>
+                    <div class="bp-board__step" id="bp-status"></div>
+                    ${hasPicks ? `<div class="bp-winrate">
+                        <div class="bp-winrate__bar"><div class="bp-winrate__fill bp-winrate__fill--my" style="width:${wr.my}%"></div></div>
+                        <div class="bp-winrate__labels">
+                            <span style="color:${wrColor}">${this._myTeam.shortName} ${wr.my}%</span>
+                            <span class="bp-winrate__vs">预估胜率</span>
+                            <span style="color:${wrEnemyColor}">${wr.enemy}% ${this._enemyTeam.shortName}</span>
+                        </div>
+                    </div>` : ''}
+                </div>
+                <div class="bp-board__team bp-board__team--red">
+                    <div class="bp-board__team-name">${this._enemyTeam.shortName} ${teamLogoHTML(this._enemyTeam.id, this._enemyTeam, 24)}</div>
+                    <div class="bp-board__bans">${banSlots(banned.enemy)}</div>
+                    <div class="bp-board__picks">${pickSlots(picks.enemy, enemyPickRoles)}</div>
+                </div>
+            </div>
+            <div class="bp-board__body">
+                <div class="bp-board__select" id="bp-select-area"></div>
+                <div class="bp-board__coach" id="bp-coach-panel">
+                    <div class="coach-header"><span class="coach-icon">🎙️</span><span class="coach-title">AI 教练</span>
+                        <button class="coach-config-btn" id="coach-config-btn" title="配置AI模型">⚙️</button></div>
+                    <div class="coach-content" id="coach-content"><div class="coach-loading">分析中...</div></div>
+                </div>
+            </div>
+        </div>`;
+
+        this._updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase);
+        this._bindCoachConfig();
+    }
+
+    async _updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase) {
+        const panel = this._container.querySelector('#coach-content');
+        if (!panel) return;
+        panel.innerHTML = '<div class="coach-loading"><span class="coach-typing"></span> 分析中...</div>';
+        const ctx = {
+            phase, myBans: banned.my, enemyBans: banned.enemy,
+            myPicks: picks.my, enemyPicks: picks.enemy,
+            myPickRoles, enemyPickRoles,
+            myTeamName: this._myTeam.shortName, enemyTeamName: this._enemyTeam.shortName,
+            enemyStarters: this._enemyStarters,
+            stepLabel: this._container.querySelector('#bp-status')?.textContent || '',
+        };
+        try {
+            const text = await getCoachAnalysis(ctx);
+            if (!panel.isConnected) return;
+            panel.innerHTML = _formatCoachText(text);
+        } catch { panel.innerHTML = '<div class="coach-error">分析失败</div>'; }
+    }
+
+    _bindCoachConfig() {
+        const btn = this._container.querySelector('#coach-config-btn');
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+            const config = getCoachConfig();
+            const panel = this._container.querySelector('#coach-content');
+            if (!panel) return;
+            panel.innerHTML = `<div class="coach-config">
+                <p class="coach-config__desc">配置大模型API</p>
+                <label>API 地址</label><input type="text" id="coach-api-url" value="${config.apiUrl || 'https://api.deepseek.com/v1/chat/completions'}"/>
+                <label>API Key</label><input type="password" id="coach-api-key" value="${config.apiKey || ''}" placeholder="sk-..."/>
+                <label>模型</label><input type="text" id="coach-model" value="${config.model || 'deepseek-chat'}"/>
+                <div class="coach-config__actions">
+                    <button class="btn btn--sm" id="coach-save">保存</button>
+                    <button class="btn btn--sm btn--outline" id="coach-cancel">取消</button>
+                </div></div>`;
+            panel.querySelector('#coach-save').addEventListener('click', () => {
+                saveCoachConfig({ apiUrl: panel.querySelector('#coach-api-url').value.trim(), apiKey: panel.querySelector('#coach-api-key').value.trim(), model: panel.querySelector('#coach-model').value.trim() });
+                panel.innerHTML = '<div class="coach-success">✅ 已保存</div>';
+            });
+            panel.querySelector('#coach-cancel').addEventListener('click', () => { panel.innerHTML = '等待操作...'; });
         });
     }
 
-    _runQuickDecisions(list) {
-        return new Promise(async resolve => {
-            const results = [];
-            for (const dec of list) {
-                const tl = dec.timeLimit||3000;
-                const r = await new Promise(res => {
-                    this._main.innerHTML = `<div class="round-panel quick-decision"><div class="qd-timer" id="qd-timer">${Math.ceil(tl/1000)}</div><h3 class="qd-text">⚡ ${dec.text}</h3><div class="qd-buttons"><button class="btn btn--gold qd-btn" data-val="correct">${dec.yes}</button><button class="btn btn--outline qd-btn" data-val="wrong">${dec.no}</button></div></div>`;
-                    let done = false, rem = tl/1000;
-                    const iv = setInterval(() => { rem--; const el=this._main.querySelector('#qd-timer'); if(el)el.textContent=rem; if(rem<=0&&!done){done=true;clearInterval(iv);res('wrong');} }, 1000);
-                    this._main.querySelectorAll('.qd-btn').forEach(b => b.addEventListener('click', () => { if(done)return; done=true; clearInterval(iv); res(b.dataset.val); }));
-                });
-                results.push(r); await this._sleep(400);
-            }
-            resolve(results);
+    _updateBPStatus(main, text) { const el = main.querySelector('#bp-status'); if (el) el.textContent = text; }
+
+    _heroCard(heroName, size = 40, showName = true) {
+        const hero = getHero(heroName);
+        if (!hero) return `<span class="bp-hero-mini">${heroName}</span>`;
+        const roleInfo = HERO_ROLES[hero.role];
+        return `<span class="bp-hero-card" title="${heroName} - ${roleInfo?.name || ''}">
+            ${heroImgHTML(hero.id, heroName, size)}
+            ${showName ? `<span class="bp-hero-card__name">${heroName}</span>` : ''}
+        </span>`;
+    }
+
+    _buildHeroTabsAndGrid(candidates, recSet, enemyPicks, defaultType = 'warrior') {
+        const grouped = { warrior: [], mage: [], tank: [], assassin: [], marksman: [], support: [] };
+        candidates.forEach(name => { const hero = getHero(name); if (hero && grouped[hero.role]) grouped[hero.role].push(name); });
+        const roleOrder = ['warrior', 'mage', 'assassin', 'tank', 'marksman', 'support'];
+        const tabs = roleOrder.map(role => {
+            const ri = HERO_ROLES[role]; const count = grouped[role].length;
+            return `<button class="bp-type-tab ${role === defaultType ? 'bp-type-tab--active' : ''}" data-type="${role}" style="--tab-color:${ri.color}">${ri.icon} ${ri.name}<span class="bp-type-tab__count">${count}</span></button>`;
+        }).join('');
+        const panels = roleOrder.map(role => {
+            const heroes = grouped[role];
+            return `<div class="bp-type-panel ${role === defaultType ? 'bp-type-panel--active' : ''}" data-panel="${role}">
+                ${heroes.length ? heroes.map(name => {
+                    const hero = getHero(name); const isRec = recSet.has(name);
+                    const ci = getCounterInfo(name); const countersEnemy = enemyPicks.filter(ep => ci.counters.includes(ep));
+                    return `<button class="bp-hero-btn ${isRec ? 'bp-hero-btn--recommended' : ''}" data-hero="${name}">
+                        <span class="bp-hero-btn__avatar">${hero ? heroImgHTML(hero.id, name, 56) : ''}</span>
+                        <span class="bp-hero-btn__name">${name}</span>
+                        ${isRec ? '<span class="bp-hero-btn__rec">荐</span>' : ''}
+                        ${countersEnemy.length ? `<span class="bp-hero-btn__counter">克${countersEnemy[0]}</span>` : ''}
+                    </button>`;
+                }).join('') : '<div class="bp-type-empty">暂无</div>'}
+            </div>`;
+        }).join('');
+        return `<div class="bp-type-tabs">${tabs}</div><div class="bp-type-panels">${panels}</div>`;
+    }
+
+    _bindHeroTabEvents(container, onHeroClick) {
+        container.querySelectorAll('.bp-type-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                container.querySelectorAll('.bp-type-tab').forEach(t => t.classList.remove('bp-type-tab--active'));
+                container.querySelectorAll('.bp-type-panel').forEach(p => p.classList.remove('bp-type-panel--active'));
+                tab.classList.add('bp-type-tab--active');
+                container.querySelector(`[data-panel="${tab.dataset.type}"]`)?.classList.add('bp-type-panel--active');
+            });
         });
+        container.querySelectorAll('.bp-hero-btn').forEach(btn => { btn.addEventListener('click', () => onHeroClick(btn.dataset.hero)); });
+    }
+
+    async _bpSelectHero(main, bpCtx, phase, bannedList, pickedList, picks) {
+        const selectArea = main.querySelector('#bp-select-area');
+        if (!selectArea) return '赵云';
+        const unavailable = new Set([...bannedList, ...pickedList]);
+        const allHeroNames = Object.keys(HEROES).filter(h => !unavailable.has(h));
+        if (!allHeroNames.length) return '赵云';
+        const banRecs = this._battleSystem.getRecommendedBan(this._enemyStarters);
+        const recSet = new Set(banRecs.map(r => r.hero));
+        selectArea.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, recSet, picks.enemy);
+        return new Promise(res => { this._bindHeroTabEvents(selectArea, hero => res(hero)); });
+    }
+
+    async _bpPickWithRole(main, bpCtx, bannedList, pickedList, picks, myPickRoles, roles) {
+        const selectArea = main.querySelector('#bp-select-area');
+        if (!selectArea) return { hero: '赵云', role: '打野' };
+        const unavailable = new Set([...bannedList, ...pickedList]);
+        const remainRoles = roles.filter(r => !myPickRoles.includes(r));
+        let currentRole = remainRoles[0] || roles[0];
+        const allHeroNames = Object.keys(HEROES).filter(h => !unavailable.has(h));
+        const recsForRole = this._battleSystem.getHeroRecommendation(currentRole, bannedList, picks.my, picks.enemy);
+        const recSet = new Set(recsForRole.map(r => r.name));
+        const roleTabsHTML = `<div class="bp-role-tabs"><span class="bp-role-tab-hint">为哪个位置选人？</span>
+            ${remainRoles.map((r, i) => `<button class="bp-role-tab ${i===0?'bp-role-tab--active':''}" data-role="${r}">${r}</button>`).join('')}</div>`;
+        selectArea.innerHTML = `${roleTabsHTML}<div id="bp-grid-container">${this._buildHeroTabsAndGrid(allHeroNames, recSet, picks.enemy)}</div>`;
+        let resolveHero;
+        const heroPromise = new Promise(res => { resolveHero = res; });
+        const gridContainer = selectArea.querySelector('#bp-grid-container');
+        this._bindHeroTabEvents(gridContainer, hero => resolveHero(hero));
+        selectArea.querySelectorAll('.bp-role-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                selectArea.querySelectorAll('.bp-role-tab').forEach(t => t.classList.remove('bp-role-tab--active'));
+                tab.classList.add('bp-role-tab--active');
+                currentRole = tab.dataset.role;
+                const newRecs = this._battleSystem.getHeroRecommendation(currentRole, bannedList, picks.my, picks.enemy);
+                gridContainer.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, new Set(newRecs.map(r => r.name)), picks.enemy);
+                this._bindHeroTabEvents(gridContainer, hero => resolveHero(hero));
+            });
+        });
+        const hero = await heroPromise;
+        return { hero, role: currentRole };
+    }
+
+    _renderBPResult(bpResult, picks, banned, myPickRoles, enemyPickRoles) {
+        const wr = estimateWinRate(picks.my, picks.enemy, myPickRoles, enemyPickRoles);
+        const wrColor = wr.my > 55 ? 'var(--color-success)' : wr.my < 45 ? 'var(--color-danger)' : '#ffc107';
+        const wrStatus = wr.my > 60 ? '🔥 大优势' : wr.my > 55 ? '✅ 小优势' : wr.my >= 45 ? '⚖️ 均势' : wr.my >= 40 ? '⚠️ 小劣势' : '🚨 大劣势';
+        return `<div class="round-panel bp-result">
+            <h3 class="round-title">BP阶段完成</h3>
+            <div class="bp-result__winrate">
+                <div class="bp-result__winrate-bar"><div class="bp-result__winrate-fill" style="width:${wr.my}%;background:${wrColor}"></div></div>
+                <div class="bp-result__winrate-labels">
+                    <span style="color:${wrColor};font-weight:700;font-size:18px">${this._myTeam.shortName} ${wr.my}%</span>
+                    <span class="bp-result__winrate-status">${wrStatus}</span>
+                    <span style="color:var(--color-danger);font-weight:700;font-size:18px">${wr.enemy}% ${this._enemyTeam.shortName}</span>
+                </div>
+            </div>
+            <div class="bp-result__lineup">
+                <div class="bp-result__side bp-result__side--my"><h4>${this._myTeam.shortName}</h4>
+                    <div class="bp-result__heroes">${picks.my.map((h, i) => `<div class="bp-result__hero">${this._heroCard(h, 44)}<span class="bp-result__role">${myPickRoles[i] || ''}</span></div>`).join('')}</div>
+                    <div class="bp-result__eval">配合度 ${bpResult.myComp.synergy} | ${bpResult.myComp.desc}</div></div>
+                <div class="bp-result__vs">VS</div>
+                <div class="bp-result__side bp-result__side--enemy"><h4>${this._enemyTeam.shortName}</h4>
+                    <div class="bp-result__heroes">${picks.enemy.map((h, i) => `<div class="bp-result__hero">${this._heroCard(h, 44)}<span class="bp-result__role">${enemyPickRoles[i] || ''}</span></div>`).join('')}</div>
+                    <div class="bp-result__eval">配合度 ${bpResult.enemyComp.synergy} | ${bpResult.enemyComp.desc}</div></div>
+            </div>
+            <div class="bp-result__banned">禁用: ${[...banned.my, ...banned.enemy].map(h => `<span class="bp-ban-tag">🚫${h}</span>`).join(' ')}</div>
+            <button class="btn btn--gold btn--large" id="btn-start-match">开始比赛 ⚔️</button>
+        </div>`;
     }
 }

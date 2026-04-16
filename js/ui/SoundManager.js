@@ -225,3 +225,38 @@ export function sfxExplore() {
     setTimeout(() => playTone(523, 0.15, 'triangle', 0.2), 120);
     setTimeout(() => playTone(659, 0.2, 'triangle', 0.2), 240);
 }
+
+/* ====== 卡牌音效 ====== */
+export function sfxCardDraw() {
+    playTone(600, 0.06, 'sine', 0.2);
+    setTimeout(() => playTone(800, 0.06, 'sine', 0.15), 40);
+}
+
+export function sfxCardPlay() {
+    playTone(440, 0.08, 'triangle', 0.3);
+    playNoise(0.06, 0.08);
+}
+
+export function sfxCardReveal() {
+    playTone(523, 0.1, 'sine', 0.2);
+    setTimeout(() => playTone(659, 0.1, 'sine', 0.25), 80);
+    setTimeout(() => playTone(784, 0.12, 'sine', 0.25), 160);
+    playNoise(0.1, 0.04);
+}
+
+export function sfxTowerDestroy() {
+    playNoise(0.3, 0.15);
+    playTone(200, 0.3, 'sawtooth', 0.2);
+    setTimeout(() => playTone(150, 0.4, 'sawtooth', 0.15), 100);
+}
+
+export function sfxObjective() {
+    [392, 523, 659, 784].forEach((f, i) => {
+        setTimeout(() => playTone(f, 0.15, 'triangle', 0.3), i * 100);
+    });
+    setTimeout(() => playNoise(0.2, 0.06), 400);
+}
+
+export function sfxDiscard() {
+    playTone(300, 0.1, 'sawtooth', 0.1);
+}
