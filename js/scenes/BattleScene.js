@@ -12,16 +12,21 @@ import { shakeElement, pulseElement } from '../ui/Transitions.js';
 import { teamLogoHTML, playerAvatarHTML } from '../ui/ImageManager.js';
 import { ECONOMY, PLAYER, MORALE } from '../data/balance.js';
 import { sfxBan, sfxPick, sfxBattleStart, sfxQTEPerfect, sfxCounterWin, sfxCounterLose, sfxVictory, sfxDefeat, sfxCheer, sfxConfirm, sfxSelect, startBGM, stopBGM } from '../ui/SoundManager.js';
-import { getCoachAnalysis, getCoachConfig, saveCoachConfig } from '../systems/AICoach.js';
+import { getCoachAnalysis, getCoachConfig, saveCoachConfig, estimateWinRate } from '../systems/AICoach.js';
 
 function _formatCoachText(text) {
     return text.split('\n').filter(l => l.trim()).map(line => {
         let cls = 'coach-line';
-        if (line.includes('⚠️') || line.includes('注意')) cls += ' coach-line--warn';
-        else if (line.includes('💡') || line.includes('建议')) cls += ' coach-line--suggest';
-        else if (line.includes('📊') || line.includes('📋')) cls += ' coach-line--info';
-        else if (line.includes('✅')) cls += ' coach-line--ok';
-        const formatted = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        const trimmed = line.trim();
+        if (trimmed.startsWith('📋') || trimmed.startsWith('🎯') || trimmed.startsWith('📌')) cls += ' coach-line--heading';
+        else if (trimmed.startsWith('⚠️') || trimmed.includes('注意')) cls += ' coach-line--warn';
+        else if (trimmed.startsWith('💡') || trimmed.startsWith('🌟') || trimmed.startsWith('⚔️')) cls += ' coach-line--suggest';
+        else if (trimmed.startsWith('📊')) cls += ' coach-line--winrate';
+        else if (trimmed.startsWith('🔴')) cls += ' coach-line--warn';
+        else if (trimmed.startsWith('✅')) cls += ' coach-line--ok';
+        else if (trimmed.startsWith('🔄')) cls += ' coach-line--info';
+        if (trimmed.startsWith('备选') || trimmed.startsWith('   ')) cls += ' coach-line--indent';
+        const formatted = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         return `<div class="${cls}">${formatted}</div>`;
     }).join('');
 }
@@ -243,6 +248,7 @@ export class BattleScene {
 
     _renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, phase) {
         const isBan = phase === 'ban';
+        const wr = estimateWinRate(picks.my, picks.enemy, myPickRoles, enemyPickRoles);
 
         const banSlots = (list) => {
             let html = '';
@@ -264,6 +270,10 @@ export class BattleScene {
             return html;
         };
 
+        const wrColor = wr.my > 55 ? 'var(--color-success)' : wr.my < 45 ? 'var(--color-danger)' : 'var(--color-text-dim)';
+        const wrEnemyColor = wr.enemy > 55 ? 'var(--color-danger)' : wr.enemy < 45 ? 'var(--color-success)' : 'var(--color-text-dim)';
+        const hasPicks = picks.my.length > 0 || picks.enemy.length > 0;
+
         main.innerHTML = `<div class="bp-board">
             <div class="bp-board__header">
                 <div class="bp-board__team bp-board__team--blue">
@@ -274,6 +284,16 @@ export class BattleScene {
                 <div class="bp-board__center">
                     <div class="bp-board__phase" id="bp-phase-label">${isBan ? '禁用阶段' : '选人阶段'}</div>
                     <div class="bp-board__step" id="bp-status"></div>
+                    ${hasPicks ? `<div class="bp-winrate" id="bp-winrate">
+                        <div class="bp-winrate__bar">
+                            <div class="bp-winrate__fill bp-winrate__fill--my" style="width:${wr.my}%"></div>
+                        </div>
+                        <div class="bp-winrate__labels">
+                            <span class="bp-winrate__label" style="color:${wrColor}">${this._myTeam.shortName} ${wr.my}%</span>
+                            <span class="bp-winrate__vs">预估胜率</span>
+                            <span class="bp-winrate__label" style="color:${wrEnemyColor}">${wr.enemy}% ${this._enemyTeam.shortName}</span>
+                        </div>
+                    </div>` : ''}
                 </div>
                 <div class="bp-board__team bp-board__team--red">
                     <div class="bp-board__team-name">${this._enemyTeam.shortName} ${teamLogoHTML(this._enemyTeam.id, this._enemyTeam, 24)}</div>
@@ -493,8 +513,22 @@ export class BattleScene {
     }
 
     _renderBPResult(bpResult, picks, banned, myPickRoles, enemyPickRoles) {
+        const wr = estimateWinRate(picks.my, picks.enemy, myPickRoles, enemyPickRoles);
+        const wrColor = wr.my > 55 ? 'var(--color-success)' : wr.my < 45 ? 'var(--color-danger)' : '#ffc107';
+        const wrStatus = wr.my > 60 ? '🔥 大优势' : wr.my > 55 ? '✅ 小优势' : wr.my >= 45 ? '⚖️ 均势' : wr.my >= 40 ? '⚠️ 小劣势' : '🚨 大劣势';
+
         return `<div class="round-panel bp-result">
             <h3 class="round-title">BP阶段完成</h3>
+            <div class="bp-result__winrate">
+                <div class="bp-result__winrate-bar">
+                    <div class="bp-result__winrate-fill" style="width:${wr.my}%;background:${wrColor}"></div>
+                </div>
+                <div class="bp-result__winrate-labels">
+                    <span style="color:${wrColor};font-weight:700;font-size:18px">${this._myTeam.shortName} ${wr.my}%</span>
+                    <span class="bp-result__winrate-status">${wrStatus}</span>
+                    <span style="color:var(--color-danger);font-weight:700;font-size:18px">${wr.enemy}% ${this._enemyTeam.shortName}</span>
+                </div>
+            </div>
             <div class="bp-result__lineup">
                 <div class="bp-result__side bp-result__side--my">
                     <h4>${this._myTeam.shortName}</h4>
