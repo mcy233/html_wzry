@@ -1,10 +1,8 @@
 /**
  * ChinaMap - 真实中国地图 + 内嵌战队标记
  *
- * 核心方案：将战队光点作为 SVG 元素直接嵌入地图 SVG 内部，
- * 共享同一个 viewBox 坐标系（0 0 700 560）。
- * 这样无论容器大小或设备分辨率如何变化，SVG 等比缩放后
- * 光点和地图的相对位置永远精确。
+ * 战队光点作为 SVG 元素嵌入地图 SVG 内部，共享 viewBox 坐标系。
+ * 位置基于真实经纬度投影，仅对重叠做微量偏移（弹簧回拉保持接近真实位置）。
  */
 
 const SVG_W = 700, SVG_H = 560;
@@ -17,9 +15,6 @@ function geoToSvg(lon, lat) {
     return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
 }
 
-/**
- * 城市真实经纬度
- */
 const CITY_COORDS = {
     '北京': [116.4, 39.9],
     '上海': [121.5, 31.2],
@@ -41,9 +36,7 @@ const CITY_COORDS = {
 };
 
 /**
- * 加载地图 SVG 并注入战队标记，返回完整的 inline SVG 元素
- * @param {Array} teams - TEAMS 数组
- * @returns {Promise<HTMLElement>} SVG DOM 元素
+ * 加载地图 SVG 并注入战队标记
  */
 export async function loadChinaMapWithTeams(teams) {
     const resp = await fetch('resources/ui/china-map.svg');
@@ -71,110 +64,147 @@ export async function loadChinaMapWithTeams(teams) {
 }
 
 /**
- * 计算所有战队的 SVG 坐标，处理同城偏移和聚集排斥
+ * 计算战队 SVG 坐标：真实投影 + 轻量排斥 + 弹簧回拉
  */
 function _layoutTeams(teams) {
     const result = teams.map(team => {
         const coords = CITY_COORDS[team.city];
-        if (!coords) return { team, x: 350, y: 280 };
+        if (!coords) return { team, ox: 350, oy: 280, x: 350, y: 280 };
         const { x, y } = geoToSvg(coords[0], coords[1]);
-        return { team, x, y };
+        return { team, ox: x, oy: y, x, y };
     });
 
-    // 同城战队初始偏移 (SVG px)
-    const cityCount = {};
+    // 同城战队初始微偏移
+    const cityTeams = {};
     for (const item of result) {
         const c = item.team.city;
-        cityCount[c] = (cityCount[c] || 0) + 1;
+        (cityTeams[c] = cityTeams[c] || []).push(item);
     }
-    const cityIndex = {};
-    for (const item of result) {
-        const c = item.team.city;
-        if (cityCount[c] > 1) {
-            const idx = cityIndex[c] = (cityIndex[c] || 0) + 1;
-            const angle = (idx / cityCount[c]) * Math.PI * 2;
-            item.x += Math.cos(angle) * 18;
-            item.y += Math.sin(angle) * 18;
-        }
+    for (const [, items] of Object.entries(cityTeams)) {
+        if (items.length <= 1) continue;
+        const n = items.length;
+        items.forEach((item, i) => {
+            const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+            item.x += Math.cos(angle) * 14;
+            item.y += Math.sin(angle) * 14;
+        });
     }
 
-    // 力排斥：确保所有光点之间不重叠 (最小距离 35px in SVG space)
-    const MIN_DIST = 35;
-    for (let iter = 0; iter < 200; iter++) {
-        let moved = false;
+    // 轻量排斥 + 弹簧回拉（保持接近真实地理位置）
+    const MIN_DIST = 24;
+    const SPRING = 0.15;
+    for (let iter = 0; iter < 80; iter++) {
         for (let i = 0; i < result.length; i++) {
             for (let j = i + 1; j < result.length; j++) {
                 const a = result[i], b = result[j];
                 const dx = a.x - b.x, dy = a.y - b.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < MIN_DIST && dist > 0.1) {
-                    const strength = (MIN_DIST - dist) / MIN_DIST * 0.6;
+                    const push = (MIN_DIST - dist) * 0.25;
                     const nx = dx / dist, ny = dy / dist;
-                    a.x += nx * strength * MIN_DIST * 0.5;
-                    a.y += ny * strength * MIN_DIST * 0.5;
-                    b.x -= nx * strength * MIN_DIST * 0.5;
-                    b.y -= ny * strength * MIN_DIST * 0.5;
-                    moved = true;
+                    a.x += nx * push;
+                    a.y += ny * push;
+                    b.x -= nx * push;
+                    b.y -= ny * push;
                 }
             }
         }
-        if (!moved) break;
+        // 弹簧：拉回原始位置
+        for (const item of result) {
+            item.x += (item.ox - item.x) * SPRING;
+            item.y += (item.oy - item.y) * SPRING;
+        }
     }
 
-    // Clamp to SVG bounds
     for (const item of result) {
-        item.x = Math.max(20, Math.min(SVG_W - 20, item.x));
-        item.y = Math.max(20, Math.min(SVG_H - 20, item.y));
+        item.x = Math.max(15, Math.min(SVG_W - 15, item.x));
+        item.y = Math.max(15, Math.min(SVG_H - 15, item.y));
     }
 
     return result;
 }
 
 /**
- * 创建单个战队标记的 SVG <g> 元素
+ * 创建战队标记 SVG <g>，包含原生 <animate> 动画
  */
 function _createTeamMarker(team, cx, cy) {
     const ns = 'http://www.w3.org/2000/svg';
     const g = document.createElementNS(ns, 'g');
     g.setAttribute('class', 'map-team-marker');
     g.setAttribute('data-team-id', team.id);
-    g.setAttribute('transform', `translate(${cx},${cy})`);
+    g.setAttribute('transform', `translate(${cx.toFixed(1)},${cy.toFixed(1)})`);
     g.style.cursor = 'pointer';
 
-    // Pulse animation ring
+    // 呼吸脉冲环 — 使用 SVG <animate> 保证兼容性
     const pulse = document.createElementNS(ns, 'circle');
-    pulse.setAttribute('r', '12');
+    pulse.setAttribute('cx', '0');
+    pulse.setAttribute('cy', '0');
+    pulse.setAttribute('r', '8');
     pulse.setAttribute('fill', 'none');
     pulse.setAttribute('stroke', team.color);
     pulse.setAttribute('stroke-width', '1.5');
-    pulse.setAttribute('class', 'marker-pulse');
+    pulse.setAttribute('opacity', '0');
+
+    const animR = document.createElementNS(ns, 'animate');
+    animR.setAttribute('attributeName', 'r');
+    animR.setAttribute('values', '8;20');
+    animR.setAttribute('dur', '2.5s');
+    animR.setAttribute('repeatCount', 'indefinite');
+    pulse.appendChild(animR);
+
+    const animOp = document.createElementNS(ns, 'animate');
+    animOp.setAttribute('attributeName', 'opacity');
+    animOp.setAttribute('values', '0.6;0');
+    animOp.setAttribute('dur', '2.5s');
+    animOp.setAttribute('repeatCount', 'indefinite');
+    pulse.appendChild(animOp);
+
+    const animSW = document.createElementNS(ns, 'animate');
+    animSW.setAttribute('attributeName', 'stroke-width');
+    animSW.setAttribute('values', '2;0.5');
+    animSW.setAttribute('dur', '2.5s');
+    animSW.setAttribute('repeatCount', 'indefinite');
+    pulse.appendChild(animSW);
+
     g.appendChild(pulse);
 
-    // Main dot
+    // 外发光 (静态)
+    const glow = document.createElementNS(ns, 'circle');
+    glow.setAttribute('cx', '0');
+    glow.setAttribute('cy', '0');
+    glow.setAttribute('r', '11');
+    glow.setAttribute('fill', team.color);
+    glow.setAttribute('opacity', '0.15');
+    g.appendChild(glow);
+
+    // 主圆点
     const dot = document.createElementNS(ns, 'circle');
-    dot.setAttribute('r', '8');
+    dot.setAttribute('cx', '0');
+    dot.setAttribute('cy', '0');
+    dot.setAttribute('r', '7');
     dot.setAttribute('fill', team.color);
-    dot.setAttribute('stroke', 'rgba(255,255,255,0.6)');
-    dot.setAttribute('stroke-width', '2');
+    dot.setAttribute('stroke', 'rgba(255,255,255,0.7)');
+    dot.setAttribute('stroke-width', '1.5');
     dot.setAttribute('class', 'marker-dot');
     g.appendChild(dot);
 
-    // Team label
+    // 标签
     const text = document.createElementNS(ns, 'text');
-    text.setAttribute('y', '20');
+    text.setAttribute('x', '0');
+    text.setAttribute('y', '18');
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('class', 'marker-label');
-    text.setAttribute('fill', '#fff');
-    text.setAttribute('font-size', '10');
+    text.setAttribute('fill', '#ddd');
+    text.setAttribute('font-size', '9');
     text.setAttribute('font-weight', '700');
-    text.setAttribute('font-family', 'sans-serif');
+    text.setAttribute('font-family', 'system-ui, sans-serif');
     text.textContent = team.shortName;
     g.appendChild(text);
 
     return g;
 }
 
-// Legacy export for compatibility
+// Legacy export
 export const CITY_MAP_POSITIONS = {};
 for (const [city, [lon, lat]] of Object.entries(CITY_COORDS)) {
     const { x, y } = geoToSvg(lon, lat);
