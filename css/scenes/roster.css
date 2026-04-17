@@ -1,47 +1,393 @@
-/* roster.css - 阵容管理 */
-.scene--roster { background: var(--color-bg); }
-.roster-scene { height: 100%; display: flex; flex-direction: column; }
-.roster-scene__header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 16px; background: var(--color-bg-light);
-    border-bottom: 1px solid var(--color-surface); flex-wrap: wrap; gap: 8px;
-}
-.roster-scene__header h2 { font-size: 16px; margin: 0; }
-.roster-scene__body { flex: 1; overflow-y: auto; padding: 16px; }
-.roster-section { margin-bottom: 20px; }
-.roster-section h3 { font-size: 15px; margin-bottom: 10px; color: var(--color-gold); }
-.roster-list { display: flex; flex-direction: column; gap: 8px; }
-.roster-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 14px; background: var(--color-surface); border-radius: var(--radius);
-    border-left: 3px solid transparent; transition: all 0.2s;
-}
-.roster-row--starter { border-left-color: var(--color-gold); }
-.roster-row--bench { opacity: 0.8; }
-.roster-row__avatar {
-    width: 40px; height: 40px; border-radius: 8px; overflow: hidden; flex-shrink: 0;
-}
-.roster-row__avatar svg { width: 40px; height: 40px; display: block; }
-.roster-row__info { flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.roster-row__name { font-weight: 700; font-size: 14px; }
-.roster-row__role { font-size: 12px; color: var(--color-text-dim); background: var(--color-surface-light); padding: 1px 6px; border-radius: 4px; }
-.roster-row__rating { font-size: 12px; color: var(--color-gold); }
-.roster-row__cond { font-size: 12px; }
-.roster-row__actions { display: flex; gap: 6px; }
-.btn--danger { background: var(--color-danger); color: #fff; border: none; }
-.btn--danger:hover { filter: brightness(1.15); }
+/* roster.css - 选手管理（卡牌式 + 左侧分栏导航） */
+.scene--roster { overflow: hidden !important; }
 
-/* 选手详情 */
-.roster-detail { border-top: 1px solid var(--color-surface); }
-.player-detail { padding: 16px; animation: fadeIn 0.3s ease; }
-.player-detail__header { padding: 8px 12px; background: var(--color-surface); border-radius: var(--radius); margin-bottom: 12px; }
-.player-detail__header h3 { margin: 0 0 4px; }
-.player-detail__role { font-size: 12px; color: var(--color-text-dim); margin-right: 12px; }
-.player-detail__rating { font-size: 13px; color: var(--color-gold); font-weight: 600; }
-.player-detail__radar { display: flex; justify-content: center; margin: 12px 0; }
-.player-detail__stats { display: flex; flex-direction: column; gap: 6px; }
-.pstat-row { display: flex; align-items: center; gap: 8px; }
-.pstat-row__label { font-size: 12px; width: 36px; text-align: right; color: var(--color-text-dim); }
-.pstat-row__bar { flex: 1; height: 8px; background: var(--color-surface); border-radius: 4px; overflow: hidden; }
-.pstat-row__fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
-.pstat-row__val { font-size: 12px; font-weight: 700; width: 24px; }
+/* ══════════ 背景 ══════════ */
+.roster-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+        url('../../resources/bg/roster-bg.webp') center/cover no-repeat,
+        linear-gradient(135deg, #0a0e17 0%, #152040 50%, #1a1535 100%);
+}
+.roster-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(10,14,23,0.4);
+}
+
+.roster-layout {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column;
+    height: 100vh;
+}
+
+/* ══════════ 顶栏 ══════════ */
+.roster-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px;
+    background: rgba(10,14,23,0.6);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(78,168,222,0.12);
+    flex-shrink: 0; gap: 12px;
+}
+.roster-topbar__left { display: flex; align-items: center; gap: 12px; }
+.roster-topbar__left h2 { font-size: 17px; font-weight: 800; margin: 0; }
+.roster-topbar__center { font-size: 13px; color: rgba(255,255,255,0.6); }
+.roster-topbar__center strong { color: #fff; }
+.roster-topbar__right { display: flex; align-items: center; gap: 10px; }
+.roster-topbar__res {
+    font-size: 12px; color: var(--color-gold);
+    background: rgba(10,14,23,0.5); padding: 4px 12px;
+    border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ══════════ 主体（左导航 + 右内容） ══════════ */
+.roster-body {
+    flex: 1; display: flex; overflow: hidden; min-height: 0;
+}
+
+/* ══════════ 左侧导航 ══════════ */
+.roster-sidebar {
+    width: 130px; flex-shrink: 0;
+    display: flex; flex-direction: column;
+    padding: 12px 8px; gap: 6px;
+    background: rgba(10,14,23,0.5);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border-right: 1px solid rgba(78,168,222,0.08);
+    overflow-y: auto;
+}
+
+.roster-nav {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 8px 10px;
+    border: none; border-radius: 8px;
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer; font-family: var(--font-main);
+    font-size: 13px; font-weight: 600;
+    text-align: left; transition: all 0.2s;
+    position: relative;
+}
+.roster-nav::before {
+    content: ''; position: absolute;
+    left: 0; top: 20%; bottom: 20%; width: 3px;
+    background: transparent; border-radius: 2px;
+    transition: background 0.2s;
+}
+.roster-nav:hover { color: rgba(255,255,255,0.8); background: rgba(78,168,222,0.06); }
+.roster-nav--active {
+    color: #fff; background: rgba(78,168,222,0.12);
+}
+.roster-nav--active::before { background: var(--color-accent); }
+.roster-nav__dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #e74c3c; position: absolute;
+    top: 8px; right: 8px;
+}
+
+/* ══════════ 右侧内容区 ══════════ */
+.roster-content {
+    flex: 1; overflow-y: auto; padding: 16px;
+    min-width: 0;
+}
+
+/* ══════════ 排序/筛选栏 ══════════ */
+.roster-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; flex-wrap: wrap;
+}
+.roster-toolbar__sort {
+    padding: 5px 12px; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px; background: rgba(10,14,23,0.4);
+    color: rgba(255,255,255,0.7); font-size: 12px;
+    font-family: var(--font-main); cursor: pointer;
+    transition: all 0.2s;
+}
+.roster-toolbar__sort:hover { border-color: var(--color-accent); color: #fff; }
+.roster-toolbar__sort--active { border-color: var(--color-accent); color: var(--color-accent); }
+.roster-toolbar__lock {
+    margin-left: auto; padding: 5px 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px; background: rgba(10,14,23,0.4);
+    color: rgba(255,255,255,0.6); font-size: 12px;
+    font-family: var(--font-main); cursor: pointer;
+}
+
+/* ══════════ 卡牌网格 ══════════ */
+.roster-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 14px;
+}
+
+/* ══════════ 单张卡牌（带边框图叠加） ══════════ */
+.roster-card {
+    position: relative;
+    aspect-ratio: 296/508;
+    cursor: pointer;
+    transition: transform 0.2s, filter 0.2s;
+    border: none; border-radius: 0;
+    background: transparent;
+    overflow: visible;
+}
+.roster-card:hover {
+    transform: translateY(-6px) scale(1.03);
+    filter: brightness(1.08);
+}
+
+.roster-card__frame {
+    position: absolute; inset: 0; z-index: 3;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    pointer-events: none;
+}
+.roster-card--r .roster-card__frame {
+    background-image: url('../../resources/ui/recruit/card-frame-r.webp');
+}
+.roster-card--sr .roster-card__frame {
+    background-image: url('../../resources/ui/recruit/card-frame-sr.webp');
+}
+.roster-card--ssr .roster-card__frame {
+    background-image: url('../../resources/ui/recruit/card-frame-ssr.webp');
+}
+
+.roster-card__avatar {
+    position: absolute;
+    top: 18%; left: 15%; right: 15%;
+    height: 43%;
+    overflow: hidden;
+    z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+}
+.roster-card__avatar .img-wrapper {
+    width: 100% !important;
+    aspect-ratio: 1 !important;
+    height: auto !important;
+    display: block !important;
+}
+.roster-card__avatar .img-wrapper img {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    border-radius: 0 !important;
+    display: block !important;
+}
+
+.roster-card__starter {
+    position: absolute; top: 19%; left: 16%;
+    padding: 2px 8px;
+    background: linear-gradient(135deg, #f0c040, #e8a820);
+    color: #1a1000; font-size: 9px; font-weight: 800;
+    border-radius: 3px; z-index: 4;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 6px rgba(240,192,64,0.4);
+}
+
+.roster-card__info {
+    position: absolute;
+    bottom: 5%; left: 10%; right: 10%;
+    top: 63%;
+    z-index: 4;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    gap: 1px;
+}
+
+.roster-card__rating {
+    font-size: 24px; font-weight: 900; color: #fff;
+    line-height: 1;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.roster-card__meta {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 9px; color: rgba(255,255,255,0.6);
+}
+.roster-card__meta .star-icon { color: var(--color-gold); }
+
+.roster-card__name {
+    font-size: 12px; font-weight: 700; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 100%;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+.roster-card__sub {
+    font-size: 9px; color: rgba(255,255,255,0.45);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* ══════════ 详情面板（右侧抽屉） ══════════ */
+.roster-detail-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; align-items: stretch; justify-content: flex-end;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    opacity: 0; transition: opacity 0.25s;
+}
+.roster-detail-overlay--show { opacity: 1; }
+
+.roster-detail-panel {
+    width: 380px; max-width: 90vw;
+    background: linear-gradient(180deg, #101828 0%, #0c1220 100%);
+    border-left: 1px solid rgba(78,168,222,0.12);
+    overflow-y: auto; padding: 20px;
+    transform: translateX(40px); transition: transform 0.3s ease;
+}
+.roster-detail-overlay--show .roster-detail-panel { transform: translateX(0); }
+
+.rd-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.rd-header__avatar {
+    width: 64px; height: 64px; border-radius: 10px;
+    overflow: hidden; flex-shrink: 0;
+}
+.rd-header__info { flex: 1; min-width: 0; }
+.rd-header__name { font-size: 18px; font-weight: 800; color: #fff; }
+.rd-header__sub { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+.rd-header__tags { display: flex; gap: 6px; margin-top: 4px; }
+.rd-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 4px; border: 1px solid;
+}
+
+.rd-power {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-bottom: 16px;
+}
+.rd-power__item {
+    text-align: center; padding: 8px;
+    background: rgba(26,34,53,0.5); border-radius: 8px;
+}
+.rd-power__item span:first-child {
+    display: block; font-size: 10px; color: rgba(255,255,255,0.45); margin-bottom: 2px;
+}
+.rd-power__item span:last-child {
+    display: block; font-size: 16px; font-weight: 800; color: #fff;
+}
+
+.rd-stats { margin-bottom: 16px; }
+.rd-stat-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.rd-stat-row__label { font-size: 11px; width: 36px; text-align: right; color: rgba(255,255,255,0.45); }
+.rd-stat-row__bar { flex: 1; height: 6px; background: rgba(26,34,53,0.6); border-radius: 3px; overflow: hidden; }
+.rd-stat-row__fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.rd-stat-row__val { font-size: 11px; font-weight: 700; width: 24px; color: #fff; }
+
+.rd-skills { margin-bottom: 16px; }
+.rd-skills h4 { font-size: 13px; color: var(--color-gold); margin: 0 0 8px; }
+.rd-skill-tag {
+    font-size: 12px; padding: 6px 10px;
+    background: rgba(26,34,53,0.5); border-radius: 6px;
+    margin-bottom: 4px;
+    border-left: 2px solid var(--color-accent);
+}
+
+.rd-actions {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.rd-actions button { font-size: 12px; }
+.rd-actions button[disabled] { opacity: 0.35; cursor: not-allowed; }
+
+/* ══════════ 碎片列表 ══════════ */
+.roster-frag-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+.roster-frag-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: rgba(26,34,53,0.6);
+    border-radius: 8px;
+    border-left: 3px solid var(--rc, #4ea8de);
+}
+.roster-frag-item__name { font-size: 13px; font-weight: 700; color: #fff; flex: 1; }
+.roster-frag-item__count { font-size: 14px; font-weight: 800; color: var(--color-gold); }
+
+/* ══════════ 解约列表 ══════════ */
+.roster-dismiss-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+}
+.roster-dismiss-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: rgba(26,34,53,0.6);
+    border-radius: 8px;
+}
+.roster-dismiss-row__info { flex: 1; }
+.roster-dismiss-row__name { font-size: 13px; font-weight: 700; color: #fff; }
+.roster-dismiss-row__meta { font-size: 11px; color: rgba(255,255,255,0.45); }
+
+/* ══════════ 图鉴网格 ══════════ */
+.roster-col-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+}
+.roster-col-item {
+    padding: 12px 6px;
+    background: rgba(26,34,53,0.5);
+    border-radius: 8px;
+    text-align: center;
+    border-top: 2px solid var(--rc, #333);
+    transition: transform 0.2s;
+}
+.roster-col-item--on:hover { transform: scale(1.04); }
+.roster-col-item--off { opacity: 0.3; }
+.roster-col-item__rarity { font-weight: 900; font-size: 12px; margin-bottom: 3px; }
+.roster-col-item__name { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+.roster-col-item__team { font-size: 10px; color: rgba(255,255,255,0.4); }
+
+.roster-col-progress { margin-bottom: 14px; }
+.roster-col-progress__bar {
+    width: 100%; height: 8px;
+    background: rgba(26,34,53,0.6); border-radius: 4px; overflow: hidden;
+}
+.roster-col-progress__fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-accent), var(--color-gold));
+    border-radius: 4px; transition: width 0.8s ease;
+}
+
+.roster-col-rewards {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+}
+.roster-col-rwd {
+    padding: 6px 12px;
+    background: rgba(26,34,53,0.6); border-radius: 6px;
+    border: 1px solid rgba(78,168,222,0.1);
+    font-size: 12px; display: flex; align-items: center; gap: 8px;
+}
+.roster-col-rwd--reached { border-color: rgba(240,192,64,0.4); background: rgba(240,192,64,0.08); }
+.roster-col-rwd--claimed { opacity: 0.45; }
+.roster-col-rwd__t { font-weight: 700; color: var(--color-gold); }
+.roster-col-rwd__done { color: var(--color-success); font-weight: 700; }
+
+/* ══════════ 空状态 ══════════ */
+.roster-empty {
+    text-align: center; padding: 60px 20px;
+    color: rgba(255,255,255,0.4); font-size: 14px;
+}
+
+/* ══════════ 响应式 ══════════ */
+@media (max-width: 640px) {
+    .roster-sidebar { width: 100px; padding: 8px 4px; }
+    .roster-nav { font-size: 11px; padding: 6px 8px; }
+    .roster-card-grid { grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 10px; }
+    .roster-card__rating { font-size: 20px; }
+    .roster-card__name { font-size: 11px; }
+    .roster-detail-panel { width: 320px; }
+    .roster-topbar { padding: 8px 12px; }
+}

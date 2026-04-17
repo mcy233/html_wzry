@@ -1,0 +1,276 @@
+/* quick-battle.css — 重构版：4 阶段动画 + 背景 blur/dim 过渡 */
+
+.scene--quick-battle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding-bottom: 0 !important;
+    position: relative;
+}
+
+/* ══════════ 背景层 ══════════ */
+.qb-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+        url('../../resources/bg/vs-bg.webp') center/cover no-repeat,
+        linear-gradient(90deg, #0a1530 0%, #0a0e17 50%, #301020 100%);
+    transition: filter 1.2s ease;
+}
+.qb-bg::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 50%; bottom: 0;
+    background: linear-gradient(135deg, rgba(78,168,222,0.08), transparent);
+}
+.qb-bg::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%; right: 0; bottom: 0;
+    background: linear-gradient(225deg, rgba(231,76,60,0.08), transparent);
+}
+.qb-bg--dimmed {
+    filter: blur(6px) brightness(0.6);
+}
+
+/* ── 暗化遮罩层 ── */
+.qb-overlay {
+    position: fixed; inset: 0; z-index: 1;
+    background: rgba(6, 10, 22, 0);
+    transition: background 1.2s ease;
+    pointer-events: none;
+}
+.qb-overlay--active {
+    background: rgba(6, 10, 22, 0.55);
+}
+
+/* ══════════ 主容器 ══════════ */
+.qb {
+    position: relative; z-index: 2;
+    max-width: 600px;
+    width: 100%;
+    padding: 24px 16px;
+    text-align: center;
+}
+
+/* ── 通用隐藏 ── */
+.qb--hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(12px);
+    transition: none;
+}
+
+/* ══════════ Phase 1: VS 对阵 ══════════ */
+.qb__versus {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 24px;
+    animation: qb-fade-in .6s ease both;
+}
+
+.qb__team {
+    text-align: center;
+    flex: 1;
+}
+.qb__team--my {
+    animation: qb-slide-from-left .7s ease both;
+}
+.qb__team--enemy {
+    animation: qb-slide-from-right .7s ease both;
+}
+.qb__logo { margin-bottom: 10px; }
+.qb__logo svg { width: 72px; height: 72px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4)); }
+.qb__name {
+    font-weight: 700; font-size: 18px; margin-bottom: 4px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+}
+.qb__team--my .qb__power { color: var(--color-accent); font-size: 22px; font-weight: 900; }
+.qb__team--enemy .qb__power { color: var(--color-danger); font-size: 22px; font-weight: 900; }
+
+/* VS 中央 */
+.qb__vs-center {
+    flex-shrink: 0;
+    animation: qb-scale-pop .5s ease both;
+    animation-delay: .3s;
+}
+.qb__vs-text {
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--color-gold);
+    text-shadow: 0 0 30px rgba(240,192,64,0.6), 0 2px 8px rgba(0,0,0,0.5);
+    animation: qb-vs-pulse 1.5s ease-in-out infinite alternate;
+}
+
+/* ── 战力条 ── */
+.qb__power-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: rgba(26,34,53,0.5);
+    margin-bottom: 8px;
+    gap: 2px;
+    animation: qb-fade-in .4s ease both;
+}
+.qb__bar {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 1.2s cubic-bezier(.4,0,.2,1);
+}
+.qb__bar--my {
+    background: linear-gradient(90deg, var(--color-accent), #6fc5ff);
+    box-shadow: 0 0 8px rgba(78,168,222,0.4);
+}
+.qb__bar--enemy {
+    background: linear-gradient(90deg, #ff6b6b, var(--color-danger));
+    box-shadow: 0 0 8px rgba(231,76,60,0.4);
+}
+
+.qb__compare {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    animation: qb-fade-in .4s ease both;
+}
+.power--ahead { color: var(--color-success); }
+.power--behind { color: var(--color-danger); }
+.power--even { color: var(--color-gold); }
+
+/* ══════════ Phase 2: 播报 ══════════ */
+.qb__broadcast {
+    margin-top: 20px;
+    text-align: left;
+    padding: 16px;
+    background: rgba(10, 14, 23, 0.6);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255,255,255,0.06);
+    animation: qb-fade-up .5s ease both;
+}
+.qb__broadcast h3 {
+    text-align: center;
+    margin-bottom: 12px;
+    color: var(--color-gold);
+    font-size: 16px;
+    text-shadow: 0 0 10px rgba(240,192,64,0.3);
+}
+.qb__lines {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.qb__line {
+    padding: 10px 14px;
+    background: rgba(26,34,53,0.7);
+    backdrop-filter: blur(4px);
+    border-radius: var(--radius);
+    font-size: 14px;
+    border-left: 3px solid var(--color-accent);
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity .4s ease, transform .4s ease;
+}
+.qb__line--in {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* ══════════ Phase 3: 结果 ══════════ */
+.qb__result {
+    margin-top: 24px;
+    padding: 24px 20px;
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(10px);
+    animation: qb-result-in 0.6s cubic-bezier(.4,0,.2,1) both;
+}
+.qb__result--victory {
+    background: linear-gradient(135deg, rgba(62,207,142,0.15), rgba(240,192,64,0.10));
+    border: 1px solid rgba(62,207,142,0.45);
+    box-shadow: 0 0 30px rgba(62,207,142,0.1);
+}
+.qb__result--defeat {
+    background: linear-gradient(135deg, rgba(231,111,81,0.15), rgba(100,50,50,0.10));
+    border: 1px solid rgba(231,76,60,0.35);
+    box-shadow: 0 0 30px rgba(231,76,60,0.08);
+}
+.qb__result h2 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+.qb__result--victory h2 {
+    color: var(--color-gold);
+    text-shadow: 0 0 20px rgba(240,192,64,0.4);
+}
+.qb__result--defeat h2 { color: var(--color-danger); }
+
+.qb__score {
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+.qb__score strong {
+    font-size: 24px;
+    margin: 0 4px;
+}
+
+.qb__stats {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    font-size: 14px;
+    margin: 8px 0;
+    color: var(--color-text-dim);
+}
+.qb__mvp {
+    font-size: 15px;
+    color: var(--color-gold);
+    margin: 10px 0;
+}
+.qb__rewards {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--color-success);
+    margin: 10px 0;
+    font-weight: 600;
+}
+.qb__btns { margin-top: 16px; }
+
+/* ══════════ 动画 keyframes ══════════ */
+@keyframes qb-vs-pulse {
+    from { transform: scale(1);    text-shadow: 0 0 20px rgba(240,192,64,0.4); }
+    to   { transform: scale(1.08); text-shadow: 0 0 40px rgba(240,192,64,0.7); }
+}
+
+@keyframes qb-slide-from-left {
+    from { opacity: 0; transform: translateX(-60px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes qb-slide-from-right {
+    from { opacity: 0; transform: translateX(60px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes qb-scale-pop {
+    0%   { opacity: 0; transform: scale(0.3); }
+    60%  { transform: scale(1.15); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes qb-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes qb-fade-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes qb-result-in {
+    from { opacity: 0; transform: translateY(40px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}

@@ -193,13 +193,23 @@ export class SeasonSystem {
     }
 
     /**
-     * 获取当前轮次中玩家的对手
+     * 获取当前轮次中玩家的对手（含回退到同阶段 round 最小的未打比赛）
      */
     getPlayerMatch() {
-        return this.schedule.find(
-            m => !m.played && m.round === this.currentRound &&
+        const phase = this.currentPhase;
+        const exact = this.schedule.find(
+            m => !m.played && m.round === this.currentRound && m.phase === phase?.id &&
                 (m.homeTeam === this.playerTeamId || m.awayTeam === this.playerTeamId)
         );
+        if (exact) return exact;
+        // 回退：同阶段中 round 最小的未打玩家比赛
+        const candidates = this.schedule.filter(
+            m => !m.played && m.phase === phase?.id &&
+                (m.homeTeam === this.playerTeamId || m.awayTeam === this.playerTeamId)
+        );
+        if (candidates.length === 0) return null;
+        candidates.sort((a, b) => a.round - b.round);
+        return candidates[0];
     }
 
     /**
@@ -231,11 +241,13 @@ export class SeasonSystem {
 
     /**
      * 模拟同一轮次中其他队伍的比赛
+     * @param {number} [round] 指定轮次，默认 currentRound
      */
-    simulateOtherMatches() {
+    simulateOtherMatches(round) {
+        const r = round ?? this.currentRound;
         const results = [];
         const roundMatches = this.schedule.filter(
-            m => !m.played && m.round === this.currentRound && m.phase === this.currentPhase.id
+            m => !m.played && m.round === r && m.phase === this.currentPhase.id
         );
 
         for (const match of roundMatches) {
@@ -268,15 +280,29 @@ export class SeasonSystem {
 
     /**
      * 推进到下一轮
+     * 自动模拟没有玩家比赛的中间轮次，确保 currentRound 始终停在有玩家比赛的轮次
      */
     advanceRound() {
-        this.currentRound++;
         const phase = this.currentPhase;
         if (!phase) return 'season_over';
 
-        const hasMore = this.schedule.some(m => !m.played && m.phase === phase.id);
-        if (!hasMore) {
-            return this.advancePhase();
+        for (let safety = 0; safety < 50; safety++) {
+            const unplayed = this.schedule.filter(m => !m.played && m.phase === phase.id);
+            if (unplayed.length === 0) {
+                return this.advancePhase();
+            }
+
+            const nextRound = Math.min(...unplayed.map(m => m.round));
+            this.currentRound = nextRound;
+
+            const hasPlayerMatch = unplayed.some(
+                m => m.round === nextRound &&
+                    (m.homeTeam === this.playerTeamId || m.awayTeam === this.playerTeamId)
+            );
+
+            if (hasPlayerMatch) return 'next_round';
+
+            this.simulateOtherMatches(nextRound);
         }
         return 'next_round';
     }

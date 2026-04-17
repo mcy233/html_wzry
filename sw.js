@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'kpl-game-v2';
+const CACHE_VERSION = 'kpl-game-v29';
 
 self.addEventListener('install', event => {
     // Skip waiting to activate immediately — ensures new code takes effect ASAP

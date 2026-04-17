@@ -1,65 +1,45 @@
 /**
- * BattleScene - 比赛场景 v3 (卡牌博弈版)
- * 流程：BP → 卡牌对战(9轮+决胜) → 赛果
+ * BattleScene - 比赛场景 (5节点事件时间轴制)
+ * 从 BPScene 接收 BP 结果，执行5节点策略博弈
  */
 import { game } from '../core/GameEngine.js';
-import { getTeamById, getStartersByTeamId, TEAMS } from '../data/teams.js';
-import { BattleSystem } from '../systems/BattleSystem.js';
-import { CardBattleSystem } from '../systems/CardBattleSystem.js';
+import { getTeamById } from '../data/teams.js';
+import { MatchEngine } from '../systems/MatchEngine.js';
 import { SeasonSystem } from '../systems/SeasonSystem.js';
-import { HEROES, HERO_ROLES, getHero, getPlayerHeroes, getCounterInfo, getHeroesForPosition, heroImgHTML, evaluateComp } from '../data/heroes.js';
+import { STRATEGY_PHASES, STRATEGY_TYPES, LANE_TARGETS, getCounterDescription } from '../data/strategyCards.js';
 import { createElement, typeWriter } from '../ui/Components.js';
-import { shakeElement, pulseElement } from '../ui/Transitions.js';
-import { teamLogoHTML, playerAvatarHTML } from '../ui/ImageManager.js';
-import { ECONOMY, PLAYER, MORALE } from '../data/balance.js';
-import { CARD_TYPES, LANES } from '../data/cards.js';
-import { createMobaMapSVG } from '../ui/MobaMap.js';
-import { renderCard, renderHandArea, renderCommandZone, renderEnemyCards, renderSettlements, renderCardCompact, renderLaneSelector } from '../ui/CardRenderer.js';
-import { sfxBan, sfxPick, sfxBattleStart, sfxVictory, sfxDefeat, sfxCheer, sfxConfirm, sfxSelect, sfxKill, sfxCardPlay, sfxCardReveal, sfxTowerDestroy, sfxObjective, sfxDiscard, startBGM, stopBGM } from '../ui/SoundManager.js';
-import { getCoachAnalysis, getCoachConfig, saveCoachConfig, estimateWinRate, getStructuredRecommendations } from '../systems/AICoach.js';
-
-function _formatCoachText(text) {
-    return text.split('\n').filter(l => l.trim()).map(line => {
-        let cls = 'coach-line';
-        const trimmed = line.trim();
-        if (trimmed.startsWith('📋') || trimmed.startsWith('🎯') || trimmed.startsWith('📌')) cls += ' coach-line--heading';
-        else if (trimmed.startsWith('⚠️')) cls += ' coach-line--warn';
-        else if (trimmed.startsWith('💡') || trimmed.startsWith('🌟') || trimmed.startsWith('⚔️')) cls += ' coach-line--suggest';
-        else if (trimmed.startsWith('📊')) cls += ' coach-line--winrate';
-        else if (trimmed.startsWith('🔴')) cls += ' coach-line--warn';
-        else if (trimmed.startsWith('✅')) cls += ' coach-line--ok';
-        const formatted = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        return `<div class="${cls}">${formatted}</div>`;
-    }).join('');
-}
+import { shakeElement } from '../ui/Transitions.js';
+import { teamLogoHTML } from '../ui/ImageManager.js';
+import { ECONOMY, PLAYER, MORALE, GROWTH } from '../data/balance.js';
+import { addTrainingExp } from '../systems/PlayerGrowth.js';
+import { getTeamStyle } from '../data/cards.js';
+import { sfxBattleStart, sfxVictory, sfxDefeat, sfxCheer, sfxConfirm, sfxSelect, sfxKill, sfxCardReveal, sfxTowerDestroy, sfxObjective, startBGM, stopBGM } from '../ui/SoundManager.js';
 
 export class BattleScene {
     async enter(container, params = {}) {
         this._container = container;
-        const teamId = params.teamId || game.getState('teamId');
-        this._myTeam = getTeamById(teamId);
 
-        this._season = this._loadSeason(teamId);
-        this._currentMatch = this._season.getPlayerMatch();
-        if (this._currentMatch) {
-            const opponentId = this._currentMatch.homeTeam === teamId ? this._currentMatch.awayTeam : this._currentMatch.homeTeam;
-            this._enemyTeam = getTeamById(opponentId);
-        } else {
-            const opponents = TEAMS.filter(t => t.id !== teamId);
-            this._enemyTeam = opponents[Math.floor(Math.random() * opponents.length)];
+        const bpData = game.state.bpResult;
+        if (!bpData) {
+            console.error('[BattleScene] No BP data found, redirecting to BP');
+            game.sceneManager.switchTo('bp');
+            return;
         }
 
-        this._myStarters = this._getMyStarters(teamId);
-        this._enemyStarters = getStartersByTeamId(this._enemyTeam.id);
-        this._battleSystem = new BattleSystem(
-            this._myTeam, this._enemyTeam, this._myStarters, this._enemyStarters,
-            { morale: game.state.team?.morale || 70, playerConditions: {} }
-        );
+        this._myTeam = getTeamById(bpData.myTeamId);
+        this._enemyTeam = getTeamById(bpData.enemyTeamId);
+        this._myStarters = bpData.myStarters;
+        this._enemyStarters = bpData.enemyStarters;
+        this._bpResult = bpData.bpResult;
+
+        const teamId = bpData.myTeamId;
+        this._season = this._loadSeason(teamId);
+        this._currentMatch = this._season.getPlayerMatch();
+
         container.className = 'scene scene--battle';
         this._renderBattleUI();
-        // BP is a long interactive flow — run it *after* enter() returns
-        // so SceneManager can finish the transition and remove the overlay
-        setTimeout(() => this._startBP(), 50);
+        startBGM('battle');
+        setTimeout(() => this._startMatch().catch(err => console.error('[Battle Error]', err)), 50);
     }
 
     _loadSeason(teamId) {
@@ -67,17 +47,6 @@ export class BattleScene {
         const sys = new SeasonSystem(teamId); sys.initGroups(); return sys;
     }
     exit() { this._container = null; }
-
-    _getMyStarters(teamId) {
-        const savedStarters = game.state.starters;
-        const players = game.state.players?.length ? game.state.players : getTeamById(teamId).players;
-        if (savedStarters?.length) {
-            const ids = new Set(savedStarters);
-            const result = players.filter(p => ids.has(p.id));
-            if (result.length >= 5) return result;
-        }
-        return getStartersByTeamId(teamId);
-    }
 
     _renderBattleUI() {
         this._container.innerHTML = `
@@ -88,7 +57,7 @@ export class BattleScene {
                         <span class="battle__team-name">${this._myTeam.name}</span>
                     </div>
                     <div class="battle__center-info">
-                        <div class="battle__round" id="round-label">BP阶段</div>
+                        <div class="battle__round" id="round-label">比赛开始</div>
                         <div class="battle__timer" id="battle-timer">--:--</div>
                     </div>
                     <div class="battle__team battle__team--enemy">
@@ -112,16 +81,29 @@ export class BattleScene {
                     <div class="scoreboard__item"><span id="towers-my">0</span> 推塔 <span id="towers-enemy">0</span></div>
                     <div class="scoreboard__item"><span id="gold-my">0</span> 经济 <span id="gold-enemy">0</span></div>
                 </div>
+                <div class="node-timeline" id="node-timeline">${this._renderTimeline(0)}</div>
                 <div class="battle__main" id="battle-main"></div>
                 <div class="battle__commentary" id="commentary">
                     <div class="commentary__icon">🎙️</div>
-                    <div class="commentary__text" id="commentary-text">BP阶段开始...</div>
+                    <div class="commentary__text" id="commentary-text">比赛即将开始...</div>
                 </div>
                 <div class="battle__danmaku" id="danmaku-layer"></div>
             </div>`;
     }
 
-    /* ---------- 通用辅助 ---------- */
+    _renderTimeline(activeIdx) {
+        return STRATEGY_PHASES.map((p, i) => {
+            let cls = 'node-timeline__node';
+            if (i < activeIdx) cls += ' node-timeline__node--done';
+            else if (i === activeIdx) cls += ' node-timeline__node--active';
+            return `<div class="${cls}">
+                <div class="node-timeline__icon">${p.icon}</div>
+                <div class="node-timeline__label">${p.name}</div>
+            </div>`;
+        }).join('<div class="node-timeline__connector"></div>');
+    }
+
+    /* ---------- helpers ---------- */
     _updateMomentum(value) {
         const myFill = this._container.querySelector('#momentum-my');
         const indicator = this._container.querySelector('#momentum-indicator');
@@ -134,15 +116,16 @@ export class BattleScene {
         valueEl.textContent = Math.round(value);
         if (Math.abs(value - 50) > 25) shakeElement(this._container.querySelector('#momentum-bar'), 3, 300);
     }
-    _updateScoreboard(bs) {
-        const s = bs || this._cardBattle;
-        if (!s) return;
-        this._container.querySelector('#kills-my').textContent = s.kills.my;
-        this._container.querySelector('#kills-enemy').textContent = s.kills.enemy;
-        this._container.querySelector('#towers-my').textContent = s.towers.my;
-        this._container.querySelector('#towers-enemy').textContent = s.towers.enemy;
-        this._container.querySelector('#gold-my').textContent = s.gold.my;
-        this._container.querySelector('#gold-enemy').textContent = s.gold.enemy;
+    _updateScoreboard() {
+        const e = this._engine;
+        if (!e) return;
+        const q = (s) => this._container.querySelector(s);
+        if (q('#kills-my')) q('#kills-my').textContent = e.kills.my;
+        if (q('#kills-enemy')) q('#kills-enemy').textContent = e.kills.enemy;
+        if (q('#towers-my')) q('#towers-my').textContent = e.towers.my;
+        if (q('#towers-enemy')) q('#towers-enemy').textContent = e.towers.enemy;
+        if (q('#gold-my')) q('#gold-my').textContent = e.gold.my;
+        if (q('#gold-enemy')) q('#gold-enemy').textContent = e.gold.enemy;
     }
     async _comment(text) { const el = this._container.querySelector('#commentary-text'); if (el) await typeWriter(el, text, 20); }
     _fireDanmaku(text) {
@@ -157,410 +140,297 @@ export class BattleScene {
     _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
     get _main() { return this._container.querySelector('#battle-main'); }
 
-    /* ====================== BP 阶段（保持原有逻辑） ====================== */
-    async _startBP() {
-        this._setRoundLabel('BP阶段');
-        await this._comment('Ban/Pick阶段开始！');
-        this._fireDanmaku('BP环节来了！');
-
-        const bpCtx = this._battleSystem.generateBPContext();
-        const main = this._main;
-        const banned = { my: [], enemy: [] };
-        const picks = { my: [], enemy: [] };
-        const myPickRoles = [];
-        const enemyPickRoles = [];
-        const roles = ['对抗路', '打野', '中路', '发育路', '游走'];
-        const allBanned = () => [...banned.my, ...banned.enemy];
-        const allPicked = () => [...picks.my, ...picks.enemy];
-
-        const myBan = async (label) => {
-            this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, 'ban');
-            this._updateBPStatus(main, label);
-            this._updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, 'ban', label);
-            const h = await this._bpSelectHero(main, bpCtx, 'ban', allBanned(), allPicked(), picks, banned);
-            banned.my.push(h); sfxBan();
-        };
-        const enemyBan = async () => {
-            this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, 'ban');
-            this._updateBPStatus(main, `${this._enemyTeam.shortName} 正在思考禁用...`);
-            await this._sleep(1200 + Math.random() * 2300);
-            const pool = this._getEnemyBanCandidates(bpCtx, allBanned());
-            if (pool.length) { banned.enemy.push(pool[0]); sfxBan(); }
-        };
-        const myPick = async (label) => {
-            this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, 'pick');
-            this._updateBPStatus(main, label);
-            this._updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, 'pick', label);
-            const r = await this._bpPickWithRole(main, bpCtx, allBanned(), allPicked(), picks, myPickRoles, roles, banned);
-            picks.my.push(r.hero); myPickRoles.push(r.role); sfxPick();
-        };
-        const enemyPick = async () => {
-            this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, 'pick');
-            this._updateBPStatus(main, `${this._enemyTeam.shortName} 正在选人...`);
-            await this._sleep(1500 + Math.random() * 2500);
-            const r = this._autoEnemyPick(bpCtx, allBanned(), allPicked(), enemyPickRoles, roles);
-            picks.enemy.push(r.hero); enemyPickRoles.push(r.role); sfxPick();
-        };
-        const refresh = (phase) => {
-            this._renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, phase);
-        };
-
-        // ---- 第1段：蓝Ban1 → 红Ban1 → 蓝Ban2 → 红Ban2 ----
-        await myBan('蓝方Ban — 第1个'); refresh('ban');
-        await enemyBan(); refresh('ban');
-        await myBan('蓝方Ban — 第2个'); refresh('ban');
-        await enemyBan(); refresh('ban');
-        await this._comment(`第一轮Ban完成 — 蓝禁:${banned.my.join('/')} 红禁:${banned.enemy.join('/')}`);
-
-        // ---- 第2段：蓝Pick1 → 红Pick1/2 → 蓝Pick2/3 → 红Pick3 ----
-        await myPick(`${this._myTeam.shortName} 选择第1位`); refresh('pick');
-        await enemyPick(); refresh('pick');
-        await enemyPick(); refresh('pick');
-        await myPick(`${this._myTeam.shortName} 选择第2位`); refresh('pick');
-        await myPick(`${this._myTeam.shortName} 选择第3位`); refresh('pick');
-        await enemyPick(); refresh('pick');
-        await this._comment('第一轮Pick完成');
-
-        // ---- 第3段：红Ban3 → 蓝Ban3 → 红Ban4 → 蓝Ban4 → 红Ban5 → 蓝Ban5 ----
-        await enemyBan(); refresh('ban');
-        await myBan('蓝方Ban — 第3个'); refresh('ban');
-        await enemyBan(); refresh('ban');
-        await myBan('蓝方Ban — 第4个'); refresh('ban');
-        await enemyBan(); refresh('ban');
-        await myBan('蓝方Ban — 第5个'); refresh('ban');
-        await this._comment(`第二轮Ban完成 — 共禁用${allBanned().length}位英雄`);
-
-        // ---- 第4段：红Pick4 → 蓝Pick4/5 → 红Pick5 ----
-        await enemyPick(); refresh('pick');
-        await myPick(`${this._myTeam.shortName} 选择第4位`); refresh('pick');
-        await myPick(`${this._myTeam.shortName} 选择第5位`); refresh('pick');
-        await enemyPick(); refresh('pick');
-
-        const bpResult = this._battleSystem.resolveBP(banned.my, picks.my, banned.enemy, picks.enemy);
-        this._bpResult = bpResult;
-        this._updateMomentum(this._battleSystem.momentum);
-
-        main.innerHTML = this._renderBPResult(bpResult, picks, banned, myPickRoles, enemyPickRoles);
-        await new Promise(res => main.querySelector('#btn-start-match').addEventListener('click', () => {
-            sfxBattleStart(); startBGM('battle'); res();
-        }));
-
-        this._startCardBattle();
-    }
-
-    /* ====================== 卡牌对战主循环 ====================== */
-    async _startCardBattle() {
-        this._cardBattle = new CardBattleSystem(
+    /* ====================== 5节点比赛主循环 ====================== */
+    async _startMatch() {
+        const style = getTeamStyle(this._enemyTeam.id);
+        this._engine = new MatchEngine(
             this._myTeam, this._enemyTeam,
             this._myStarters, this._enemyStarters,
             this._bpResult,
-            { morale: game.state.team?.morale || 70 }
+            { morale: game.state.team?.morale || 70, enemyStyle: style }
         );
 
-        for (let i = 0; i < this._cardBattle.totalRounds; i++) {
-            if (this._cardBattle.gameOver) break;
-            const roundData = this._cardBattle.startRound();
-            await this._playRound(roundData);
-        }
+        this._updateMomentum(this._engine.momentum);
+        sfxBattleStart();
+        await this._comment('比赛正式开始！');
+        await this._sleep(800);
 
-        if (!this._cardBattle.gameOver) {
-            await this._playFinale();
+        while (!this._engine.isFinished) {
+            const info = this._engine.getPhaseInfo();
+            this._updateTimeline(info.index);
+            await this._playNode(info);
+            if (this._engine.gameOver) break;
         }
 
         await this._showFinalResult();
     }
 
-    async _playRound(roundData) {
-        const { round, phaseLabel, ap, event } = roundData;
-        this._setRoundLabel(`第${round}轮 · ${phaseLabel}`);
-        this._updateTimer(round * 3);
+    _updateTimeline(activeIdx) {
+        const el = this._container.querySelector('#node-timeline');
+        if (el) el.innerHTML = this._renderTimeline(activeIdx);
+    }
 
-        if (event) {
-            await this._comment(`${event.icon} ${event.name}：${event.desc}`);
-            this._fireDanmaku(`${event.icon} ${event.name}！`);
-            await this._sleep(1000);
-        }
+    async _playNode(info) {
+        const { phase, cards, index } = info;
+        this._setRoundLabel(`${phase.icon} ${phase.name}`);
+        this._updateTimer(phase.timerMinutes);
+
+        await this._comment(`${phase.icon} ${phase.name}（${phase.time}）— ${phase.desc}`);
+        this._fireDanmaku(`${phase.icon} ${phase.name}开始！`);
+        await this._sleep(600);
 
         const main = this._main;
-        const cbs = this._cardBattle;
+        const engine = this._engine;
 
-        // 渲染对战界面
-        const commandSlots = [];
-        let currentAP = cbs.currentAP;
+        let selectedCardId = null;
+        let selectedLane = null;
 
-        const render = () => {
-            main.innerHTML = `<div class="card-battle">
-                <div class="cb-layout">
-                    <div class="cb-left">
-                        <div class="cb-map-wrap">
-                            ${createMobaMapSVG(cbs.lanes, { baronAlive: cbs.baronAlive, lordAlive: cbs.lordAlive, showLordPlaceholder: round >= 5 })}
-                        </div>
-                        <div class="cb-coach" id="cb-coach">
-                            <div class="cb-coach__header">🎙️ AI教练</div>
-                            <div class="cb-coach__body" id="cb-coach-body">
-                                ${cbs.getCoachAdvice().map(t => `<div class="cb-coach__tip">${t}</div>`).join('')}
+        const renderNode = () => {
+            const advice = engine.getCoachAdvice();
+            const stateLabel = info.momentum >= 60 ? '顺风' : info.momentum <= 40 ? '逆风' : '均势';
+
+            const recCard = advice.recommended;
+            const starRating = (score) => {
+                const s = Math.min(5, Math.max(1, Math.round(score / 5)));
+                return '★'.repeat(s) + '☆'.repeat(5 - s);
+            };
+
+            let coachHTML = `<div class="coach-u__situation">📊 ${advice.situation}</div>`;
+            if (advice.playerInsight) {
+                coachHTML += `<div class="coach-u__insight">🔍 ${advice.playerInsight}</div>`;
+            }
+            if (recCard) {
+                coachHTML += `<div class="coach-u__rec">
+                    <div class="coach-u__rec-header">
+                        <span class="coach-u__rec-label">推荐策略</span>
+                        <span class="coach-u__rec-name">「${recCard.card.name}」</span>
+                        <span class="coach-u__rec-stars">${starRating(recCard.score)}</span>
+                    </div>
+                    ${recCard.reasons.length ? `<div class="coach-u__rec-reasons">${recCard.reasons.map(r => `<div class="coach-u__reason">↳ ${r}</div>`).join('')}</div>` : ''}
+                </div>`;
+            }
+            if (advice.alternatives.length) {
+                coachHTML += `<div class="coach-u__alts">${advice.alternatives.map(a =>
+                    `<div class="coach-u__alt">
+                        <span class="coach-u__alt-label">备选</span>
+                        <span class="coach-u__alt-name">「${a.card.name}」</span>
+                        <span class="coach-u__alt-stars">${starRating(a.score)}</span>
+                        ${a.reasons[0] ? `<span class="coach-u__alt-reason">— ${a.reasons[0]}</span>` : ''}
+                    </div>`
+                ).join('')}</div>`;
+            }
+            if (advice.warnings.length) {
+                coachHTML += `<div class="coach-u__warnings">${advice.warnings.map(w => `<div class="coach-u__warn">⚠️ ${w}</div>`).join('')}</div>`;
+            }
+
+            main.innerHTML = `<div class="node-decision">
+                <div class="node-decision__left">
+                    <div class="node-scene">
+                        <div class="node-scene__title">${phase.icon} ${phase.name}</div>
+                        <div class="node-scene__time">${phase.time}</div>
+                        <div class="node-scene__desc">${phase.desc}</div>
+                    </div>
+                    <div class="node-stats">
+                        <div class="node-stat"><span class="node-stat__label">势能</span><span class="node-stat__value">${Math.round(engine.momentum)}</span></div>
+                        <div class="node-stat"><span class="node-stat__label">击杀</span><span class="node-stat__value">${engine.kills.my}:${engine.kills.enemy}</span></div>
+                        <div class="node-stat"><span class="node-stat__label">经济</span><span class="node-stat__value">${engine.gold.my}:${engine.gold.enemy}</span></div>
+                        <div class="node-stat"><span class="node-stat__label">推塔</span><span class="node-stat__value">${engine.towers.my}:${engine.towers.enemy}</span></div>
+                        ${engine.buffs.baron ? '<div class="node-stat node-stat--buff">🐉 暴君buff</div>' : ''}
+                        ${engine.buffs.lord ? '<div class="node-stat node-stat--buff">👑 主宰buff</div>' : ''}
+                    </div>
+                    <div class="node-coach" id="node-coach">
+                        <div class="node-coach__header">🎙️ AI 教练</div>
+                        <div class="node-coach__body" id="node-coach-body">${coachHTML}</div>
+                        <div class="node-coach__llm" id="node-coach-llm"></div>
+                    </div>
+                </div>
+                <div class="node-decision__right">
+                    <div class="node-cards-title">选择策略</div>
+                    <div class="node-cards" id="node-cards">
+                        ${cards.map(c => this._renderStrategyCard(c, phase, selectedCardId === c.id)).join('')}
+                    </div>
+                    ${phase.requireLaneChoice ? `
+                        <div class="node-lane-choice ${selectedCardId ? '' : 'node-lane-choice--hidden'}" id="lane-choice">
+                            <div class="node-lane-choice__title">选择Gank路线</div>
+                            <div class="node-lane-choice__opts">
+                                ${Object.entries(LANE_TARGETS).map(([k, v]) =>
+                                    `<button class="node-lane-btn ${selectedLane === k ? 'node-lane-btn--active' : ''}" data-lane="${k}">${v.icon} ${v.short}</button>`
+                                ).join('')}
                             </div>
                         </div>
-                        <div class="cb-coach-llm" id="cb-coach-llm" style="display:none"></div>
-                    </div>
-                    <div class="cb-right">
-                        ${renderEnemyCards(cbs.enemyHand.length, cbs.revealedEnemyCards)}
-                        ${renderCommandZone(commandSlots, 3)}
-                        ${renderHandArea(cbs.myHand, currentAP, 5)}
-                        <button class="btn btn--gold btn--large cb-confirm" id="btn-confirm-round" ${commandSlots.length === 0 ? 'disabled' : ''}>
-                            确认出牌 ⚔️
-                        </button>
-                    </div>
+                    ` : ''}
+                    <button class="btn btn--gold btn--large node-confirm" id="btn-confirm-node"
+                        ${(!selectedCardId || (phase.requireLaneChoice && !selectedLane)) ? 'disabled' : ''}>
+                        确认策略 ⚔️
+                    </button>
                 </div>
             </div>`;
 
-            this._bindCardInteractions(main, cbs, commandSlots, currentAP, render);
+            this._bindNodeInteractions(main, cards, phase, (cardId, lane) => {
+                selectedCardId = cardId;
+                selectedLane = lane;
+                renderNode();
+            });
         };
 
-        render();
+        renderNode();
+        this._loadLLMAdvice(engine, main);
 
-        this._loadLLMCoachAdvice(cbs, main);
-
-        // 等待玩家确认出牌
-        const playedCards = await new Promise(resolve => {
-            const waitForConfirm = () => {
-                const btn = main.querySelector('#btn-confirm-round');
-                if (btn) {
-                    btn.addEventListener('click', () => {
-                        sfxConfirm();
-                        resolve(commandSlots.map(s => ({ card: s.card, targetLane: s.targetLane })));
-                    });
-                }
+        const choice = await new Promise(resolve => {
+            const bind = () => {
+                const btn = main.querySelector('#btn-confirm-node');
+                if (btn) btn.addEventListener('click', () => {
+                    sfxConfirm();
+                    resolve({ cardId: selectedCardId, lane: selectedLane });
+                });
             };
-            waitForConfirm();
-            this._onReRender = waitForConfirm;
+            bind();
+            this._onNodeReRender = bind;
         });
 
-        // 结算回合
-        const result = cbs.resolveRound(playedCards);
+        const result = engine.resolveNode(choice);
+
         this._updateMomentum(result.momentum);
-        this._updateScoreboard(cbs);
+        this._updateScoreboard();
 
-        // 显示结算动画
-        await this._showRoundResult(result);
+        await this._showNodeResult(result);
     }
 
-    _loadLLMCoachAdvice(cbs, main) {
-        cbs.getCoachAdviceAsync().then(result => {
-            if (result.type !== 'llm') return;
-            const llmEl = main.querySelector('#cb-coach-llm');
-            if (!llmEl) return;
-            llmEl.style.display = 'block';
-            llmEl.innerHTML = `
-                <div class="cb-coach-llm__header">🧠 AI大模型分析</div>
-                <div class="cb-coach-llm__body">${result.content.replace(/\n/g, '<br>')}</div>
-            `;
-        }).catch(() => {});
+    _renderStrategyCard(card, phase, isSelected) {
+        const typeInfo = STRATEGY_TYPES[card.type] || STRATEGY_TYPES.tactic;
+        const counterDesc = phase.cards ? getCounterDescription(card, phase) : { counters: null, counteredBy: null };
+
+        return `<div class="strategy-card ${isSelected ? 'strategy-card--selected' : ''} strategy-card--${card.type}" data-card-id="${card.id}">
+            <div class="strategy-card__header">
+                <span class="strategy-card__icon">${card.icon}</span>
+                <span class="strategy-card__name">${card.name}</span>
+                <span class="strategy-card__type" style="color:${typeInfo.color}">${typeInfo.icon} ${typeInfo.name}</span>
+            </div>
+            <div class="strategy-card__body">
+                <div class="strategy-card__desc">${card.desc}</div>
+                ${card.effect.momentum ? `<div class="strategy-card__effect">势能 +${card.effect.momentum}</div>` : ''}
+                ${card.effect.gold ? `<div class="strategy-card__effect">经济 +${card.effect.gold}</div>` : ''}
+                ${card.effect.buff ? `<div class="strategy-card__effect strategy-card__effect--buff">🐉 获取${card.effect.buff === 'lord' ? '主宰' : '暴君'}buff</div>` : ''}
+            </div>
+            <div class="strategy-card__footer">
+                ${counterDesc.counters ? `<span class="strategy-card__counter strategy-card__counter--win">✓ ${counterDesc.counters}</span>` : ''}
+                ${counterDesc.counteredBy ? `<span class="strategy-card__counter strategy-card__counter--lose">✕ ${counterDesc.counteredBy}</span>` : ''}
+                ${card.noCounter ? `<span class="strategy-card__counter strategy-card__counter--safe">安全牌 · 无克制</span>` : ''}
+            </div>
+        </div>`;
     }
 
-    _bindCardInteractions(main, cbs, commandSlots, currentAP, reRender) {
-        // 手牌点击 -> 出牌
-        main.querySelectorAll('#hand-cards .card').forEach(cardEl => {
-            cardEl.addEventListener('click', () => {
-                const uid = cardEl.dataset.uid;
-                const card = cbs.myHand.find(c => c.uid === uid);
-                if (!card) return;
-
-                const check = cbs.canPlayCard(card);
-                if (!check.ok) {
-                    cardEl.classList.add('card--shake');
-                    setTimeout(() => cardEl.classList.remove('card--shake'), 400);
-                    return;
-                }
-
-                if (card.target === 'choose') {
-                    this._showLaneSelector(main, (lane) => {
-                        if (card.cost <= currentAP) {
-                            currentAP -= card.cost;
-                            if (card.bonusAP) currentAP += card.bonusAP;
-                            commandSlots.push({ card, targetLane: lane });
-                            reRender();
-                            if (this._onReRender) this._onReRender();
-                        }
-                    });
-                    return;
-                }
-
-                if (card.cost <= currentAP) {
-                    currentAP -= card.cost;
-                    if (card.bonusAP) currentAP += card.bonusAP;
-                    commandSlots.push({ card, targetLane: null });
-                    sfxCardPlay();
-                    reRender();
-                    if (this._onReRender) this._onReRender();
-                }
-            });
-
-            // 双击弃牌
-            cardEl.addEventListener('dblclick', () => {
-                const uid = cardEl.dataset.uid;
-                const card = cbs.myHand.find(c => c.uid === uid);
-                if (card) {
-                    cbs.discard(card);
-                    sfxDiscard();
-                    reRender();
-                    if (this._onReRender) this._onReRender();
-                }
+    _bindNodeInteractions(main, cards, phase, onSelect) {
+        main.querySelectorAll('.strategy-card').forEach(el => {
+            el.addEventListener('click', () => {
+                sfxSelect();
+                const cardId = el.dataset.cardId;
+                onSelect(cardId, phase.requireLaneChoice ? null : undefined);
+                if (this._onNodeReRender) this._onNodeReRender();
             });
         });
-
-        // 指令区移除
-        main.querySelectorAll('.cmd-slot__remove').forEach(btn => {
+        main.querySelectorAll('.node-lane-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const idx = parseInt(btn.dataset.idx);
-                const removed = commandSlots.splice(idx, 1)[0];
-                if (removed) {
-                    currentAP += removed.card.cost;
-                    if (removed.card.bonusAP) currentAP -= removed.card.bonusAP;
-                    cbs.myHand.push(removed.card);
-                }
-                reRender();
-                if (this._onReRender) this._onReRender();
+                sfxSelect();
+                const lane = btn.dataset.lane;
+                const selectedCard = main.querySelector('.strategy-card--selected');
+                const cardId = selectedCard?.dataset?.cardId;
+                onSelect(cardId, lane);
+                if (this._onNodeReRender) this._onNodeReRender();
             });
         });
     }
 
-    _showLaneSelector(main, callback) {
-        const existing = main.querySelector('#lane-selector');
-        if (existing) existing.remove();
+    _loadLLMAdvice(engine, main) {
+        const llmEl = main.querySelector('#node-coach-llm');
+        if (llmEl) llmEl.innerHTML = '<div class="coach-u__llm-loading"><span class="coach-typing"></span> 深度分析中...</div>';
 
-        const overlay = document.createElement('div');
-        overlay.className = 'lane-selector-overlay';
-        overlay.id = 'lane-selector';
-        overlay.innerHTML = `
-            <div class="lane-selector">
-                <div class="lane-selector__title">选择目标路线</div>
-                <div class="lane-selector__options">
-                    <button class="lane-opt" data-lane="top">${LANES.top.icon} ${LANES.top.name}</button>
-                    <button class="lane-opt" data-lane="mid">${LANES.mid.icon} ${LANES.mid.name}</button>
-                    <button class="lane-opt" data-lane="bot">${LANES.bot.icon} ${LANES.bot.name}</button>
-                </div>
-            </div>`;
-        main.appendChild(overlay);
-
-        overlay.querySelectorAll('.lane-opt').forEach(btn => {
-            btn.addEventListener('click', () => {
-                overlay.remove();
-                callback(btn.dataset.lane);
-            });
+        engine.getCoachAdviceAsync().then(result => {
+            const el = main.querySelector('#node-coach-llm');
+            if (!el) return;
+            if (result.type === 'llm') {
+                el.innerHTML = `<div class="coach-u__llm-section">
+                    <div class="coach-u__llm-header">🧠 深度分析</div>
+                    <div class="coach-u__llm-body">${result.content.replace(/\n/g, '<br>')}</div>
+                </div>`;
+            } else {
+                el.innerHTML = '';
+            }
+        }).catch(() => {
+            const el = main.querySelector('#node-coach-llm');
+            if (el) el.innerHTML = '';
         });
-        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
     }
 
-    async _showRoundResult(result) {
+    async _showNodeResult(result) {
         const main = this._main;
-        const settlements = result.settlements;
+        const { phase, myCard, enemyCard, counterResult, events } = result;
 
-        main.innerHTML = `<div class="round-result-panel">
-            <h3 class="round-result__title">第${result.round}轮结算</h3>
-            <div class="round-result__body">
-                <div class="round-result__map">
-                    ${createMobaMapSVG(result.lanes, { baronAlive: this._cardBattle.baronAlive, lordAlive: this._cardBattle.lordAlive })}
+        const counterLabel = {
+            win: { text: '克制成功！', cls: 'result-counter--win', icon: '🎯' },
+            lose: { text: '被克制！', cls: 'result-counter--lose', icon: '💀' },
+            draw: { text: '策略相同', cls: 'result-counter--draw', icon: '🤝' },
+            neutral: { text: '互不克制', cls: 'result-counter--neutral', icon: '⚡' },
+        }[counterResult] || { text: '', cls: '', icon: '' };
+
+        main.innerHTML = `<div class="node-result">
+            <h3 class="node-result__title">${phase.icon} ${phase.name} — 结算</h3>
+            <div class="node-result__versus">
+                <div class="node-result__card node-result__card--my">
+                    <div class="node-result__card-label">我方策略</div>
+                    <div class="node-result__card-icon">${myCard.icon}</div>
+                    <div class="node-result__card-name">${myCard.name}</div>
                 </div>
-                <div class="round-result__events">
-                    <div class="result-section">
-                        <h4>📋 对手出牌</h4>
-                        <div class="enemy-played">
-                            ${result.enemyActions.map(a => `<div class="enemy-action">
-                                <span class="enemy-action__icon">${CARD_TYPES[a.type]?.icon || '⚡'}</span>
-                                <span>${a.name}</span>
-                            </div>`).join('')}
-                        </div>
+                <div class="node-result__vs">
+                    <div class="node-result__counter ${counterLabel.cls}">
+                        <span class="node-result__counter-icon">${counterLabel.icon}</span>
+                        <span>${counterLabel.text}</span>
                     </div>
-                    <div class="result-section">
-                        <h4>⚔️ 结算结果</h4>
-                        ${renderSettlements(settlements)}
-                    </div>
-                    <div class="result-section result-lane-status">
-                        <h4>🗺️ 当前战况</h4>
-                        ${Object.entries(result.lanes).map(([lane, l]) => {
-                            const laneLabel = { top: '上路', mid: '中路', bot: '下路' }[lane];
-                            const myProg = 100 - l.progress;
-                            const color = myProg > 60 ? '#2ecc71' : myProg < 40 ? '#e74c3c' : '#f0c040';
-                            return `<div class="lane-status-row">
-                                <span class="lane-status__name">${laneLabel}</span>
-                                <div class="lane-status__bar"><div class="lane-status__fill" style="width:${myProg}%;background:${color}"></div></div>
-                                <span class="lane-status__value" style="color:${color}">${myProg}%</span>
-                                <span class="lane-status__towers">🏰${l.myTowers} vs ${l.enemyTowers}🏰</span>
-                            </div>`;
-                        }).join('')}
-                    </div>
+                </div>
+                <div class="node-result__card node-result__card--enemy">
+                    <div class="node-result__card-label">对方策略</div>
+                    <div class="node-result__card-icon">${enemyCard.icon}</div>
+                    <div class="node-result__card-name">${enemyCard.name}</div>
                 </div>
             </div>
-            <button class="btn btn--gold btn--large" id="btn-next-round">${result.gameOver ? '查看结果' : '下一轮 →'}</button>
+            <div class="node-result__events">
+                ${events.map(e => `<div class="node-result__event node-result__event--${e.side}">
+                    <span class="node-result__event-icon">${e.icon}</span>
+                    <span>${e.desc}</span>
+                </div>`).join('')}
+            </div>
+            <div class="node-result__stats">
+                <div class="node-result__stat">势能 <strong>${Math.round(result.momentum)}</strong></div>
+                <div class="node-result__stat">击杀 <strong>${result.kills.my}:${result.kills.enemy}</strong></div>
+                <div class="node-result__stat">经济 <strong>${result.gold.my}:${result.gold.enemy}</strong></div>
+                <div class="node-result__stat">推塔 <strong>${result.towers.my}:${result.towers.enemy}</strong></div>
+            </div>
+            <button class="btn btn--gold btn--large" id="btn-next-node">
+                ${result.gameOver ? '查看比赛结果' : '下一节点 →'}
+            </button>
         </div>`;
 
         sfxCardReveal();
-        const killEvents = settlements.filter(s => s.type === 'kill' || s.type === 'ambush' || s.type === 'teamfight_win');
-        if (killEvents.length) setTimeout(() => sfxKill(), 300);
-        if (settlements.some(s => s.type === 'tower')) setTimeout(() => sfxTowerDestroy(), 500);
-        if (settlements.some(s => s.type === 'objective')) setTimeout(() => sfxObjective(), 400);
+        if (counterResult === 'win') setTimeout(() => sfxKill(), 300);
+        if (events.some(e => e.type === 'tower')) setTimeout(() => sfxTowerDestroy(), 500);
+        if (events.some(e => e.type === 'buff')) setTimeout(() => sfxObjective(), 400);
 
-        // 弹幕
-        for (const s of settlements.slice(0, 3)) {
-            this._fireDanmaku(s.desc);
+        for (const e of events.slice(0, 3)) {
+            this._fireDanmaku(e.desc);
             await this._sleep(300);
         }
 
-        if (settlements.length) {
-            await this._comment(settlements[0].desc);
-        }
+        if (events.length) await this._comment(events[0].desc);
 
-        await new Promise(res => main.querySelector('#btn-next-round')?.addEventListener('click', res));
-    }
-
-    async _playFinale() {
-        const cbs = this._cardBattle;
-        const m = cbs.momentum;
-        this._setRoundLabel('决胜轮');
-
-        const main = this._main;
-        const status = m >= 60 ? '顺风' : m > 40 ? '均势' : '逆风';
-        const statusColor = m >= 60 ? '#2ecc71' : m > 40 ? '#f0c040' : '#e74c3c';
-
-        main.innerHTML = `<div class="finale-panel">
-            <h2 class="finale-title">⚔️ 决胜时刻</h2>
-            <div class="finale-status">
-                <span>当前势能</span>
-                <span class="finale-momentum" style="color:${statusColor}">${Math.round(m)} — ${status}</span>
-            </div>
-            <div class="finale-map">${createMobaMapSVG(cbs.lanes, { baronAlive: false, lordAlive: cbs.lordAlive })}</div>
-            ${m >= 60 ? `
-                <p class="finale-desc">我方优势明显！选择终结方式：</p>
-                <div class="finale-choices">
-                    <button class="finale-btn finale-btn--push" data-choice="push">🏰 强攻水晶<br><span>快速但有风险</span></button>
-                    <button class="finale-btn finale-btn--safe" data-choice="safe">🛡️ 步步为营<br><span>稳健推进</span></button>
-                </div>
-            ` : m > 40 ? `
-                <p class="finale-desc">局势焦灼！将进行最终团战决定胜负！</p>
-                <button class="btn btn--gold btn--large finale-fight" data-choice="fight">⚔️ 最终团战</button>
-            ` : `
-                <p class="finale-desc">形势危急！拼死一搏！</p>
-                <button class="btn btn--danger btn--large finale-fight" data-choice="desperate">🔥 绝境反击</button>
-            `}
-        </div>`;
-
-        const choice = await new Promise(res => {
-            main.querySelectorAll('[data-choice]').forEach(btn => {
-                btn.addEventListener('click', () => res(btn.dataset.choice));
-            });
-        });
-
-        const result = cbs.resolveFinale(choice);
-        this._finaleResult = result;
+        await new Promise(res => main.querySelector('#btn-next-node')?.addEventListener('click', res));
     }
 
     async _showFinalResult() {
-        const cbs = this._cardBattle;
-        const result = this._finaleResult || cbs.resolveFinale('safe');
-        this._recordMatchResult(result);
+        const engine = this._engine;
+        const summary = engine.getMatchSummary();
+        this._recordMatchResult(summary);
 
-        if (result.won) {
+        if (summary.won) {
             game.state.team.gold += ECONOMY.MATCH_WIN_GOLD;
             game.state.team.fame += ECONOMY.MATCH_WIN_FAME;
             game.state.team.fans = (game.state.team.fans || 0) + ECONOMY.MATCH_WIN_FANS;
@@ -575,38 +445,70 @@ export class BattleScene {
             p.condition = Math.max(PLAYER.MIN_CONDITION, (p.condition || PLAYER.START_CONDITION) - PLAYER.CONDITION_DECAY_PER_MATCH);
         });
 
+        const baseExp = summary.won ? GROWTH.MATCH_WIN_EXP : GROWTH.MATCH_LOSE_EXP;
+        const detailedBonus = Math.round(baseExp * GROWTH.DETAILED_BATTLE_BONUS);
+        addTrainingExp(baseExp + detailedBonus);
+
         const otherHTML = this._renderOtherResults();
+        const timelineHTML = this._renderMatchTimeline(summary.nodeHistory);
         stopBGM();
         const main = this._main;
 
-        if (result.won) {
+        if (summary.won) {
             sfxVictory(); setTimeout(() => sfxCheer(), 1200);
             main.innerHTML = `<div class="round-result round-result--victory">
                 <div class="victory-banner"><h2>🏆 VICTORY</h2><p>${this._myTeam.name} 赢得比赛！</p></div>
                 <div class="match-stats">
-                    <div class="match-stat">击杀 ${result.kills.my}:${result.kills.enemy}</div>
-                    <div class="match-stat">推塔 ${result.towers.my}:${result.towers.enemy}</div>
-                    <div class="match-stat">经济 ${result.gold.my}:${result.gold.enemy}</div>
-                    <div class="match-stat">MVP: ${result.mvp?.id || '—'}</div>
+                    <div class="match-stat">击杀 ${summary.kills.my}:${summary.kills.enemy}</div>
+                    <div class="match-stat">推塔 ${summary.towers.my}:${summary.towers.enemy}</div>
+                    <div class="match-stat">经济 ${summary.gold.my}:${summary.gold.enemy}</div>
+                    <div class="match-stat">MVP: ${summary.mvp?.name || summary.mvp?.id || '—'}</div>
                 </div>
+                ${timelineHTML}
                 ${otherHTML}
-                <button class="btn btn--gold btn--large" id="btn-finish">返回基地</button>
+                <button class="btn btn--gold btn--large" id="btn-finish">返回赛事日历</button>
             </div>`;
         } else {
             sfxDefeat();
             main.innerHTML = `<div class="round-result round-result--defeat">
                 <div class="defeat-banner"><h2>DEFEAT</h2><p>${this._enemyTeam.name} 赢得比赛</p></div>
                 <div class="match-stats">
-                    <div class="match-stat">击杀 ${result.kills.my}:${result.kills.enemy}</div>
-                    <div class="match-stat">推塔 ${result.towers.my}:${result.towers.enemy}</div>
-                    <div class="match-stat">经济 ${result.gold.my}:${result.gold.enemy}</div>
+                    <div class="match-stat">击杀 ${summary.kills.my}:${summary.kills.enemy}</div>
+                    <div class="match-stat">推塔 ${summary.towers.my}:${summary.towers.enemy}</div>
+                    <div class="match-stat">经济 ${summary.gold.my}:${summary.gold.enemy}</div>
                 </div>
+                ${timelineHTML}
                 ${otherHTML}
-                <button class="btn btn--outline btn--large" id="btn-finish">返回基地</button>
+                <button class="btn btn--outline btn--large" id="btn-finish">返回赛事日历</button>
             </div>`;
         }
         game.save();
-        this._container.querySelector('#btn-finish')?.addEventListener('click', () => game.sceneManager.switchTo('home'));
+        this._container.querySelector('#btn-finish')?.addEventListener('click', () => game.sceneManager.switchTo('matchCalendar'));
+    }
+
+    _renderMatchTimeline(history) {
+        if (!history || !history.length) return '';
+        return `<div class="match-timeline">
+            <h4 class="match-timeline__title">📋 比赛回顾</h4>
+            <div class="match-timeline__nodes">
+                ${history.map(h => {
+                    const counterCls = {
+                        win: 'timeline-node--win',
+                        lose: 'timeline-node--lose',
+                        draw: 'timeline-node--draw',
+                        neutral: 'timeline-node--neutral',
+                    }[h.counterResult] || '';
+                    return `<div class="timeline-node ${counterCls}">
+                        <div class="timeline-node__phase">${h.phase.icon} ${h.phase.name}</div>
+                        <div class="timeline-node__cards">
+                            <span class="timeline-node__my">${h.myCard.icon} ${h.myCard.name}</span>
+                            <span class="timeline-node__vs">vs</span>
+                            <span class="timeline-node__enemy">${h.enemyCard.icon} ${h.enemyCard.name}</span>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
     }
 
     _renderOtherResults() {
@@ -620,277 +522,19 @@ export class BattleScene {
             }).join('')}</div></div>`;
     }
 
-    _recordMatchResult(result) {
-        if (this._currentMatch) {
-            this._season.recordPlayerMatch(this._currentMatch, result.won, result.kills?.my || 0, result.kills?.enemy || 0);
+    _recordMatchResult(summary) {
+        let match = this._currentMatch || this._season.getPlayerMatch();
+        if (match) {
+            const matchRound = match.round;
+            this._season.recordPlayerMatch(match, summary.won, summary.kills?.my || 0, summary.kills?.enemy || 0);
+            this._otherResults = this._season.simulateOtherMatches(matchRound);
+        } else {
+            this._otherResults = this._season.simulateOtherMatches();
         }
-        this._otherResults = this._season.simulateOtherMatches();
         this._season.advanceRound();
+        game.state.season = game.state.season || {};
         game.state.season.phase = this._season.currentPhase?.id || 'annual_finals';
         game.state.season.round = this._season.currentRound;
         game.state.seasonSystem = this._season.toSaveData();
-    }
-
-    /* ====================== BP 辅助方法（保持原有） ====================== */
-    _getEnemyBanCandidates(bpCtx, bannedList) {
-        return bpCtx.my.flatMap(c => c.heroes.map(h => h.name)).filter(h => !bannedList.includes(h));
-    }
-
-    _autoEnemyPick(bpCtx, bannedList, pickedList, enemyPickRoles, roles) {
-        const unavailable = new Set([...bannedList, ...pickedList]);
-        const remainRoles = roles.filter(r => !enemyPickRoles.includes(r));
-        const role = remainRoles.length > 0 ? remainRoles[0] : roles[0];
-        const ctx = bpCtx.enemy.find(c => c.role === role);
-        const pool = (ctx?.heroes || []).map(h => h.name).filter(h => !unavailable.has(h));
-        const hero = pool.length > 0 ? pool[0] : (Object.keys(HEROES).find(h => !unavailable.has(h)) || '赵云');
-        return { hero, role };
-    }
-
-    _renderBPBoard(main, bpCtx, banned, picks, myPickRoles, enemyPickRoles, phase) {
-        const isBan = phase === 'ban';
-        const wr = estimateWinRate(picks.my, picks.enemy, myPickRoles, enemyPickRoles);
-        const hasPicks = picks.my.length > 0 || picks.enemy.length > 0;
-        const wrColor = wr.my > 55 ? 'var(--color-success)' : wr.my < 45 ? 'var(--color-danger)' : 'var(--color-text-dim)';
-        const wrEnemyColor = wr.enemy > 55 ? 'var(--color-danger)' : wr.enemy < 45 ? 'var(--color-success)' : 'var(--color-text-dim)';
-
-        const banSlots = (list) => {
-            let html = '';
-            for (let i = 0; i < 5; i++) {
-                html += list[i]
-                    ? `<span class="bp-ban-slot bp-ban-slot--filled">${this._heroCard(list[i], 28, false)}</span>`
-                    : `<span class="bp-ban-slot"></span>`;
-            }
-            return html;
-        };
-        const pickSlots = (pickList, roleList) => {
-            let html = '';
-            for (let i = 0; i < 5; i++) {
-                const h = pickList[i]; const r = roleList[i];
-                html += `<div class="bp-pick-slot ${h ? 'bp-pick-slot--filled' : ''}">${h ? this._heroCard(h, 42) : `<span class="bp-pick-placeholder">${r || '?'}</span>`}${r ? `<span class="bp-pick-role-tag">${r}</span>` : ''}</div>`;
-            }
-            return html;
-        };
-
-        main.innerHTML = `<div class="bp-board">
-            <div class="bp-board__header">
-                <div class="bp-board__team bp-board__team--blue">
-                    <div class="bp-board__team-name">${teamLogoHTML(this._myTeam.id, this._myTeam, 24)} ${this._myTeam.shortName}</div>
-                    <div class="bp-board__bans">${banSlots(banned.my)}</div>
-                    <div class="bp-board__picks">${pickSlots(picks.my, myPickRoles)}</div>
-                </div>
-                <div class="bp-board__center">
-                    <div class="bp-board__phase" id="bp-phase-label">${isBan ? '禁用阶段' : '选人阶段'}</div>
-                    <div class="bp-board__step" id="bp-status"></div>
-                    ${hasPicks ? `<div class="bp-winrate">
-                        <div class="bp-winrate__bar"><div class="bp-winrate__fill bp-winrate__fill--my" style="width:${wr.my}%"></div></div>
-                        <div class="bp-winrate__labels">
-                            <span style="color:${wrColor}">${this._myTeam.shortName} ${wr.my}%</span>
-                            <span class="bp-winrate__vs">预估胜率</span>
-                            <span style="color:${wrEnemyColor}">${wr.enemy}% ${this._enemyTeam.shortName}</span>
-                        </div>
-                    </div>` : ''}
-                </div>
-                <div class="bp-board__team bp-board__team--red">
-                    <div class="bp-board__team-name">${this._enemyTeam.shortName} ${teamLogoHTML(this._enemyTeam.id, this._enemyTeam, 24)}</div>
-                    <div class="bp-board__bans">${banSlots(banned.enemy)}</div>
-                    <div class="bp-board__picks">${pickSlots(picks.enemy, enemyPickRoles)}</div>
-                </div>
-            </div>
-            <div class="bp-board__body">
-                <div class="bp-board__select" id="bp-select-area"></div>
-                <div class="bp-board__coach" id="bp-coach-panel">
-                    <div class="coach-header"><span class="coach-icon">🎙️</span><span class="coach-title">AI 教练</span>
-                        <label class="coach-llm-toggle" title="启用/关闭大模型推理"><input type="checkbox" id="coach-llm-switch" ${getCoachConfig().apiKey && getCoachConfig().enableBP !== false ? 'checked' : ''} /><span class="coach-llm-toggle__label">LLM</span></label></div>
-                    <div class="coach-content" id="coach-content"><div class="coach-loading">分析中...</div></div>
-                </div>
-            </div>
-        </div>`;
-
-        this._updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase);
-        this._bindCoachLLMToggle();
-    }
-
-    async _updateCoachAnalysis(banned, picks, myPickRoles, enemyPickRoles, phase, stepLabel) {
-        const panel = this._container.querySelector('#coach-content');
-        if (!panel) return;
-        panel.innerHTML = '<div class="coach-loading"><span class="coach-typing"></span> 分析中...</div>';
-        const ctx = {
-            phase, myBans: banned.my, enemyBans: banned.enemy,
-            myPicks: picks.my, enemyPicks: picks.enemy,
-            myPickRoles, enemyPickRoles,
-            myTeamName: this._myTeam.shortName, enemyTeamName: this._enemyTeam.shortName,
-            enemyStarters: this._enemyStarters,
-            stepLabel: stepLabel || this._container.querySelector('#bp-status')?.textContent || '',
-            banProgress: `我方已禁${banned.my.length}个，对方已禁${banned.enemy.length}个`,
-            pickProgress: `我方已选${picks.my.length}个(${myPickRoles.join('/')}), 对方已选${picks.enemy.length}个`,
-        };
-        try {
-            const text = await getCoachAnalysis(ctx);
-            if (!panel.isConnected) return;
-            panel.innerHTML = _formatCoachText(text);
-        } catch { panel.innerHTML = '<div class="coach-error">分析失败</div>'; }
-    }
-
-    _bindCoachLLMToggle() {
-        const sw = this._container.querySelector('#coach-llm-switch');
-        if (!sw) return;
-        const cfg = getCoachConfig();
-        if (!cfg.apiKey) {
-            sw.disabled = true;
-            sw.checked = false;
-            sw.parentElement.title = '请先在游戏设置中配置大模型API';
-        }
-        sw.addEventListener('change', () => {
-            const config = getCoachConfig();
-            config.enableBP = sw.checked;
-            saveCoachConfig(config);
-            const panel = this._container.querySelector('#coach-content');
-            if (panel) panel.innerHTML = `<div class="coach-loading">${sw.checked ? '大模型已启用，分析中...' : '已切换为规则引擎模式'}</div>`;
-        });
-    }
-
-    _updateBPStatus(main, text) {
-        const el = main.querySelector('#bp-status');
-        if (!el) return;
-        el.textContent = text;
-        const isThinking = text.includes('正在思考') || text.includes('正在选人');
-        el.classList.toggle('bp-board__step--thinking', isThinking);
-    }
-
-    _heroCard(heroName, size = 40, showName = true) {
-        const hero = getHero(heroName);
-        if (!hero) return `<span class="bp-hero-mini">${heroName}</span>`;
-        const roleInfo = HERO_ROLES[hero.role];
-        return `<span class="bp-hero-card" title="${heroName} - ${roleInfo?.name || ''}">
-            ${heroImgHTML(hero.id, heroName, size)}
-            ${showName ? `<span class="bp-hero-card__name">${heroName}</span>` : ''}
-        </span>`;
-    }
-
-    _buildHeroTabsAndGrid(candidates, recMap, enemyPicks, defaultType = 'warrior') {
-        const grouped = { warrior: [], mage: [], tank: [], assassin: [], marksman: [], support: [] };
-        candidates.forEach(name => { const hero = getHero(name); if (hero && grouped[hero.role]) grouped[hero.role].push(name); });
-        const roleOrder = ['warrior', 'mage', 'assassin', 'tank', 'marksman', 'support'];
-        const tabs = roleOrder.map(role => {
-            const ri = HERO_ROLES[role]; const count = grouped[role].length;
-            return `<button class="bp-type-tab ${role === defaultType ? 'bp-type-tab--active' : ''}" data-type="${role}" style="--tab-color:${ri.color}">${ri.icon} ${ri.name}<span class="bp-type-tab__count">${count}</span></button>`;
-        }).join('');
-        const panels = roleOrder.map(role => {
-            const heroes = grouped[role];
-            return `<div class="bp-type-panel ${role === defaultType ? 'bp-type-panel--active' : ''}" data-panel="${role}">
-                ${heroes.length ? heroes.map(name => {
-                    const hero = getHero(name);
-                    const rec = recMap.get(name);
-                    const ci = getCounterInfo(name); const countersEnemy = enemyPicks.filter(ep => ci.counters.includes(ep));
-                    const recClass = rec ? (rec.type === 'ban' ? 'bp-hero-btn--rec-ban' : 'bp-hero-btn--rec-pick') : '';
-                    return `<button class="bp-hero-btn ${recClass}" data-hero="${name}">
-                        <span class="bp-hero-btn__avatar">${hero ? heroImgHTML(hero.id, name, 56) : ''}</span>
-                        <span class="bp-hero-btn__name">${name}</span>
-                        ${rec ? `<span class="bp-hero-btn__rec bp-hero-btn__rec--${rec.type}" title="${rec.reason}">${rec.type === 'ban' ? '禁' : '选'}</span>` : ''}
-                        ${countersEnemy.length ? `<span class="bp-hero-btn__counter">克${countersEnemy[0]}</span>` : ''}
-                    </button>`;
-                }).join('') : '<div class="bp-type-empty">暂无</div>'}
-            </div>`;
-        }).join('');
-        return `<div class="bp-type-tabs">${tabs}</div><div class="bp-type-panels">${panels}</div>`;
-    }
-
-    _bindHeroTabEvents(container, onHeroClick) {
-        container.querySelectorAll('.bp-type-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                container.querySelectorAll('.bp-type-tab').forEach(t => t.classList.remove('bp-type-tab--active'));
-                container.querySelectorAll('.bp-type-panel').forEach(p => p.classList.remove('bp-type-panel--active'));
-                tab.classList.add('bp-type-tab--active');
-                container.querySelector(`[data-panel="${tab.dataset.type}"]`)?.classList.add('bp-type-panel--active');
-            });
-        });
-        container.querySelectorAll('.bp-hero-btn').forEach(btn => { btn.addEventListener('click', () => onHeroClick(btn.dataset.hero)); });
-    }
-
-    async _bpSelectHero(main, bpCtx, phase, bannedList, pickedList, picks, banned) {
-        const selectArea = main.querySelector('#bp-select-area');
-        if (!selectArea) return '赵云';
-        const unavailable = new Set([...bannedList, ...pickedList]);
-        const allHeroNames = Object.keys(HEROES).filter(h => !unavailable.has(h));
-        if (!allHeroNames.length) return '赵云';
-
-        const recs = getStructuredRecommendations({
-            phase: 'ban', myBans: banned?.my || [], enemyBans: banned?.enemy || [],
-            myPicks: picks.my, enemyPicks: picks.enemy, myPickRoles: [],
-            enemyStarters: this._enemyStarters,
-        });
-        const recMap = new Map(recs.map(r => [r.hero, r]));
-
-        selectArea.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, recMap, picks.enemy);
-        return new Promise(res => { this._bindHeroTabEvents(selectArea, hero => res(hero)); });
-    }
-
-    async _bpPickWithRole(main, bpCtx, bannedList, pickedList, picks, myPickRoles, roles, banned) {
-        const selectArea = main.querySelector('#bp-select-area');
-        if (!selectArea) return { hero: '赵云', role: '打野' };
-        const unavailable = new Set([...bannedList, ...pickedList]);
-        const remainRoles = roles.filter(r => !myPickRoles.includes(r));
-        let currentRole = remainRoles[0] || roles[0];
-        const allHeroNames = Object.keys(HEROES).filter(h => !unavailable.has(h));
-
-        const ROLE_TO_TYPE = { '对抗路': 'warrior', '打野': 'assassin', '中路': 'mage', '发育路': 'marksman', '游走': 'support' };
-
-        const _buildRecMap = () => {
-            const recs = getStructuredRecommendations({
-                phase: 'pick', myBans: banned?.my || [], enemyBans: banned?.enemy || [],
-                myPicks: picks.my, enemyPicks: picks.enemy, myPickRoles,
-                enemyStarters: this._enemyStarters,
-            });
-            return new Map(recs.map(r => [r.hero, r]));
-        };
-
-        const _defaultType = () => ROLE_TO_TYPE[currentRole] || 'warrior';
-
-        const roleTabsHTML = `<div class="bp-role-tabs"><span class="bp-role-tab-hint">为哪个位置选人？</span>
-            ${remainRoles.map((r, i) => `<button class="bp-role-tab ${i===0?'bp-role-tab--active':''}" data-role="${r}">${r}</button>`).join('')}</div>`;
-        selectArea.innerHTML = `${roleTabsHTML}<div id="bp-grid-container">${this._buildHeroTabsAndGrid(allHeroNames, _buildRecMap(), picks.enemy, _defaultType())}</div>`;
-        let resolveHero;
-        const heroPromise = new Promise(res => { resolveHero = res; });
-        const gridContainer = selectArea.querySelector('#bp-grid-container');
-        this._bindHeroTabEvents(gridContainer, hero => resolveHero(hero));
-        selectArea.querySelectorAll('.bp-role-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                selectArea.querySelectorAll('.bp-role-tab').forEach(t => t.classList.remove('bp-role-tab--active'));
-                tab.classList.add('bp-role-tab--active');
-                currentRole = tab.dataset.role;
-                gridContainer.innerHTML = this._buildHeroTabsAndGrid(allHeroNames, _buildRecMap(), picks.enemy, _defaultType());
-                this._bindHeroTabEvents(gridContainer, hero => resolveHero(hero));
-            });
-        });
-        const hero = await heroPromise;
-        return { hero, role: currentRole };
-    }
-
-    _renderBPResult(bpResult, picks, banned, myPickRoles, enemyPickRoles) {
-        const wr = estimateWinRate(picks.my, picks.enemy, myPickRoles, enemyPickRoles);
-        const wrColor = wr.my > 55 ? 'var(--color-success)' : wr.my < 45 ? 'var(--color-danger)' : '#ffc107';
-        const wrStatus = wr.my > 60 ? '🔥 大优势' : wr.my > 55 ? '✅ 小优势' : wr.my >= 45 ? '⚖️ 均势' : wr.my >= 40 ? '⚠️ 小劣势' : '🚨 大劣势';
-        return `<div class="round-panel bp-result">
-            <h3 class="round-title">BP阶段完成</h3>
-            <div class="bp-result__winrate">
-                <div class="bp-result__winrate-bar"><div class="bp-result__winrate-fill" style="width:${wr.my}%;background:${wrColor}"></div></div>
-                <div class="bp-result__winrate-labels">
-                    <span style="color:${wrColor};font-weight:700;font-size:18px">${this._myTeam.shortName} ${wr.my}%</span>
-                    <span class="bp-result__winrate-status">${wrStatus}</span>
-                    <span style="color:var(--color-danger);font-weight:700;font-size:18px">${wr.enemy}% ${this._enemyTeam.shortName}</span>
-                </div>
-            </div>
-            <div class="bp-result__lineup">
-                <div class="bp-result__side bp-result__side--my"><h4>${this._myTeam.shortName}</h4>
-                    <div class="bp-result__heroes">${picks.my.map((h, i) => `<div class="bp-result__hero">${this._heroCard(h, 44)}<span class="bp-result__role">${myPickRoles[i] || ''}</span></div>`).join('')}</div>
-                    <div class="bp-result__eval">配合度 ${bpResult.myComp.synergy} | ${bpResult.myComp.desc}</div></div>
-                <div class="bp-result__vs">VS</div>
-                <div class="bp-result__side bp-result__side--enemy"><h4>${this._enemyTeam.shortName}</h4>
-                    <div class="bp-result__heroes">${picks.enemy.map((h, i) => `<div class="bp-result__hero">${this._heroCard(h, 44)}<span class="bp-result__role">${enemyPickRoles[i] || ''}</span></div>`).join('')}</div>
-                    <div class="bp-result__eval">配合度 ${bpResult.enemyComp.synergy} | ${bpResult.enemyComp.desc}</div></div>
-            </div>
-            <div class="bp-result__banned">禁用: ${[...banned.my, ...banned.enemy].map(h => `<span class="bp-ban-tag">🚫${h}</span>`).join(' ')}</div>
-            <button class="btn btn--gold btn--large" id="btn-start-match">开始比赛 ⚔️</button>
-        </div>`;
     }
 }

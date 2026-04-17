@@ -75,6 +75,78 @@ export const REPUTATION = {
     GAIN_NPC_MET: 25,
 };
 
+/* ===== 选手养成系统 ===== */
+export const GROWTH = {
+    MAX_LEVEL: 60,
+    MAX_STAT: 99,
+    LEVEL_GOLD_MULT: 10,
+    TRAINING_BASE_EXP: 50,
+    TRAINING_ADVANCED_EXP: 80,
+    EXP_GRADE_S: 2.0,
+    EXP_GRADE_A: 1.5,
+    EXP_GRADE_B: 1.0,
+    EXP_GRADE_C: 0.5,
+    MATCH_WIN_EXP: 200,
+    MATCH_LOSE_EXP: 50,
+    PLAYOFF_WIN_EXP: 400,
+    FINALS_WIN_EXP: 800,
+    DAILY_QUEST_EXP: 30,
+    EXPLORE_EXP_MIN: 20,
+    EXPLORE_EXP_MAX: 80,
+    DETAILED_BATTLE_BONUS: 0.2,
+    SKILL_POOL: {
+        '对抗路': [
+            { name: '不屈意志', desc: '逆风对线时抗压+8', effect: { '抗压': 8 } },
+            { name: '线霸', desc: '对线期压制力+12%', effect: { '对线': 6 } },
+        ],
+        '打野': [
+            { name: '丛林霸主', desc: '打野效率+15%，前期节奏更强', effect: { '意识': 5 } },
+            { name: '团战指挥', desc: '团战阶段全队意识+3', effect: { '配合': 5 } },
+        ],
+        '中路': [
+            { name: '中路统治', desc: '中路压制力+15%', effect: { '对线': 6 } },
+            { name: '全图支援', desc: '支援效率+12%', effect: { '意识': 5 } },
+        ],
+        '发育路': [
+            { name: '极限发育', desc: '经济领先+10%', effect: { '操作': 5 } },
+            { name: '团战输出', desc: '后期团战伤害+12%', effect: { '操作': 6 } },
+        ],
+        '游走': [
+            { name: '视野大师', desc: '视野控制+15%', effect: { '意识': 6 } },
+            { name: '保护之盾', desc: '队友保护能力+12%', effect: { '配合': 6 } },
+        ],
+    },
+};
+
+/* ===== 签约抽卡系统 ===== */
+export const RECRUIT = {
+    SSR_RATE: 0.05,
+    SR_RATE: 0.25,
+    R_RATE: 0.70,
+    GOLD_PITY: 30,
+    TEN_PULL_SR_GUARANTEE: true,
+    WISH_LIST_MAX: 3,
+    WISH_SSR_RATE: 0.50,
+    DUPE_FRAGMENT: { R: 2, SR: 5, SSR: 10 },
+};
+
+/* ===== 转会市场 ===== */
+export const TRANSFER = {
+    MARKET_SIZE: 10,
+    PRICE: { R: [200, 500], SR: [800, 2000], SSR: [3000, 8000] },
+    FRAGMENT_EXCHANGE: { R: 3, SR: 5, SSR: 10 },
+};
+
+/* ===== 快速战斗 ===== */
+export const QUICK_BATTLE = {
+    BASE_NOISE: 0.06,
+    MIN_WIN_RATE: 0.05,
+    MAX_WIN_RATE: 0.95,
+    ANIMATION_PHASE1_MS: 2000,
+    ANIMATION_PHASE2_MS: 4000,
+    ANIMATION_PHASE3_MS: 2000,
+};
+
 /* ===== 比赛系统 ===== */
 export const BATTLE = {
     MOMENTUM_START: 50,

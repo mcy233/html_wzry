@@ -1,7 +1,9 @@
 /**
- * SoundManager - 游戏音效系统
- * 使用 Web Audio API 合成所有音效，无需外部音频文件
+ * SoundManager - 游戏音效系统 v2
+ * MP3优先 + 合成音效fallback + 场景BGM自动切换
  */
+import { eventBus } from '../core/EventBus.js';
+
 let _ctx = null;
 let _enabled = true;
 let _bgmGain = null;
@@ -23,7 +25,14 @@ function getCtx() {
     return _ctx;
 }
 
-export function setEnabled(on) { _enabled = on; }
+export function setEnabled(on) {
+    _enabled = on;
+    if (!on) {
+        stopBGM();
+        stopFileBGM();
+        stopAmbient();
+    }
+}
 export function isEnabled() { return _enabled; }
 
 export function setVolume(type, val) {
@@ -67,29 +76,58 @@ function playNoise(duration, gainVal = 0.1) {
     source.start(ctx.currentTime);
 }
 
+/* ====== MP3音效播放 ====== */
+
+const _sfxCache = new Map();
+const SFX_DIR = 'resources/audio/sfx/';
+
+function _playSfxFile(name) {
+    if (!_enabled) return false;
+    const src = SFX_DIR + name;
+    try {
+        const audio = new Audio(src);
+        audio.volume = Math.max(0, Math.min(1, _volume.sfx));
+        audio.preload = 'auto';
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => {});
+        return true;
+    } catch { return false; }
+}
+
+function sfxFileOrSynth(fileName, synthFn) {
+    if (!_enabled) return;
+    if (!_playSfxFile(fileName)) synthFn();
+}
+
 /* ====== UI 音效 ====== */
 export function sfxClick() {
-    playTone(800, 0.08, 'sine', 0.2);
+    sfxFileOrSynth('click.mp3', () => playTone(800, 0.08, 'sine', 0.2));
 }
 
 export function sfxHover() {
-    playTone(600, 0.04, 'sine', 0.1);
+    sfxFileOrSynth('hover.mp3', () => playTone(600, 0.04, 'sine', 0.1));
 }
 
 export function sfxSelect() {
-    playTone(523, 0.06, 'sine', 0.25);
-    setTimeout(() => playTone(659, 0.06, 'sine', 0.25), 60);
+    sfxFileOrSynth('confirm.mp3', () => {
+        playTone(523, 0.06, 'sine', 0.25);
+        setTimeout(() => playTone(659, 0.06, 'sine', 0.25), 60);
+    });
 }
 
 export function sfxConfirm() {
-    playTone(523, 0.1, 'triangle', 0.3);
-    setTimeout(() => playTone(659, 0.1, 'triangle', 0.3), 80);
-    setTimeout(() => playTone(784, 0.15, 'triangle', 0.3), 160);
+    sfxFileOrSynth('confirm.mp3', () => {
+        playTone(523, 0.1, 'triangle', 0.3);
+        setTimeout(() => playTone(659, 0.1, 'triangle', 0.3), 80);
+        setTimeout(() => playTone(784, 0.15, 'triangle', 0.3), 160);
+    });
 }
 
 export function sfxCancel() {
-    playTone(400, 0.1, 'sawtooth', 0.15);
-    setTimeout(() => playTone(300, 0.15, 'sawtooth', 0.15), 80);
+    sfxFileOrSynth('cancel.mp3', () => {
+        playTone(400, 0.1, 'sawtooth', 0.15);
+        setTimeout(() => playTone(300, 0.15, 'sawtooth', 0.15), 80);
+    });
 }
 
 export function sfxBan() {
@@ -104,10 +142,12 @@ export function sfxPick() {
 
 /* ====== 战斗音效 ====== */
 export function sfxBattleStart() {
-    [523, 659, 784, 1047].forEach((f, i) => {
-        setTimeout(() => playTone(f, 0.2, 'triangle', 0.35), i * 120);
+    sfxFileOrSynth('battle-start.mp3', () => {
+        [523, 659, 784, 1047].forEach((f, i) => {
+            setTimeout(() => playTone(f, 0.2, 'triangle', 0.35), i * 120);
+        });
+        setTimeout(() => playNoise(0.3, 0.1), 400);
     });
-    setTimeout(() => playNoise(0.3, 0.1), 400);
 }
 
 export function sfxQTE() {
@@ -134,39 +174,136 @@ export function sfxCounterLose() {
 }
 
 export function sfxKill() {
-    playTone(880, 0.05, 'square', 0.2);
-    setTimeout(() => playTone(1100, 0.08, 'square', 0.2), 50);
+    sfxFileOrSynth('kill.mp3', () => {
+        playTone(880, 0.05, 'square', 0.2);
+        setTimeout(() => playTone(1100, 0.08, 'square', 0.2), 50);
+    });
 }
 
 /* ====== 胜利/失败 ====== */
 export function sfxVictory() {
-    const melody = [523, 659, 784, 1047, 784, 1047, 1319];
-    melody.forEach((f, i) => {
-        setTimeout(() => playTone(f, 0.25, 'triangle', 0.35), i * 150);
+    sfxFileOrSynth('victory-sting.mp3', () => {
+        const melody = [523, 659, 784, 1047, 784, 1047, 1319];
+        melody.forEach((f, i) => {
+            setTimeout(() => playTone(f, 0.25, 'triangle', 0.35), i * 150);
+        });
+        setTimeout(() => {
+            playNoise(0.5, 0.08);
+            playTone(1047, 0.5, 'sine', 0.2);
+            playTone(1319, 0.5, 'sine', 0.2);
+            playTone(1568, 0.5, 'sine', 0.2);
+        }, 1100);
     });
-    setTimeout(() => {
-        playNoise(0.5, 0.08);
-        playTone(1047, 0.5, 'sine', 0.2);
-        playTone(1319, 0.5, 'sine', 0.2);
-        playTone(1568, 0.5, 'sine', 0.2);
-    }, 1100);
 }
 
 export function sfxDefeat() {
-    const melody = [440, 392, 349, 330, 262];
-    melody.forEach((f, i) => {
-        setTimeout(() => playTone(f, 0.3, 'sine', 0.25), i * 200);
+    sfxFileOrSynth('defeat-sting.mp3', () => {
+        const melody = [440, 392, 349, 330, 262];
+        melody.forEach((f, i) => {
+            setTimeout(() => playTone(f, 0.3, 'sine', 0.25), i * 200);
+        });
     });
 }
 
 export function sfxCheer() {
-    playNoise(1.0, 0.12);
-    [784, 988, 1175].forEach((f, i) => {
-        setTimeout(() => playTone(f, 0.15, 'sine', 0.15), i * 100 + 200);
+    sfxFileOrSynth('crowd-cheer.mp3', () => {
+        playNoise(1.0, 0.12);
+        [784, 988, 1175].forEach((f, i) => {
+            setTimeout(() => playTone(f, 0.15, 'sine', 0.15), i * 100 + 200);
+        });
     });
 }
 
-/* ====== BGM系统 ====== */
+/* ====== 额外音效 ====== */
+export function sfxNavigate() {
+    sfxFileOrSynth('navigate.mp3', () => {
+        playTone(440, 0.06, 'sine', 0.15);
+        setTimeout(() => playTone(523, 0.06, 'sine', 0.15), 50);
+    });
+}
+
+export function sfxTraining() {
+    sfxFileOrSynth('level-up.mp3', () => {
+        playTone(659, 0.1, 'triangle', 0.2);
+        setTimeout(() => playTone(784, 0.1, 'triangle', 0.2), 100);
+        setTimeout(() => playTone(880, 0.15, 'triangle', 0.25), 200);
+    });
+}
+
+export function sfxGold() {
+    sfxFileOrSynth('coin.mp3', () => {
+        playTone(1319, 0.08, 'sine', 0.3);
+        setTimeout(() => playTone(1568, 0.1, 'sine', 0.3), 60);
+    });
+}
+
+export function sfxExplore() {
+    playTone(392, 0.15, 'triangle', 0.2);
+    setTimeout(() => playTone(523, 0.15, 'triangle', 0.2), 120);
+    setTimeout(() => playTone(659, 0.2, 'triangle', 0.2), 240);
+}
+
+export function sfxCardDraw() {
+    sfxFileOrSynth('card-flip.mp3', () => {
+        playTone(600, 0.06, 'sine', 0.2);
+        setTimeout(() => playTone(800, 0.06, 'sine', 0.15), 40);
+    });
+}
+
+export function sfxCardPlay() {
+    playTone(440, 0.08, 'triangle', 0.3);
+    playNoise(0.06, 0.08);
+}
+
+export function sfxCardReveal() {
+    sfxFileOrSynth('card-flip.mp3', () => {
+        playTone(523, 0.1, 'sine', 0.2);
+        setTimeout(() => playTone(659, 0.1, 'sine', 0.25), 80);
+        setTimeout(() => playTone(784, 0.12, 'sine', 0.25), 160);
+        playNoise(0.1, 0.04);
+    });
+}
+
+export function sfxSSRReveal() {
+    _playSfxFile('ssr-reveal.mp3') || sfxCardReveal();
+}
+
+export function sfxSRReveal() {
+    _playSfxFile('sr-reveal.mp3') || sfxCardReveal();
+}
+
+export function sfxLevelUp() {
+    sfxFileOrSynth('level-up.mp3', () => sfxTraining());
+}
+
+export function sfxStarUp() {
+    sfxFileOrSynth('star-up.mp3', () => {
+        [784, 988, 1175, 1568].forEach((f, i) => {
+            setTimeout(() => playTone(f, 0.2, 'triangle', 0.3), i * 100);
+        });
+    });
+}
+
+export function sfxTowerDestroy() {
+    sfxFileOrSynth('tower.mp3', () => {
+        playNoise(0.3, 0.15);
+        playTone(200, 0.3, 'sawtooth', 0.2);
+        setTimeout(() => playTone(150, 0.4, 'sawtooth', 0.15), 100);
+    });
+}
+
+export function sfxObjective() {
+    [392, 523, 659, 784].forEach((f, i) => {
+        setTimeout(() => playTone(f, 0.15, 'triangle', 0.3), i * 100);
+    });
+    setTimeout(() => playNoise(0.2, 0.06), 400);
+}
+
+export function sfxDiscard() {
+    playTone(300, 0.1, 'sawtooth', 0.1);
+}
+
+/* ====== 合成BGM (fallback) ====== */
 export function startBGM(type = 'menu') {
     stopBGM();
     if (!_enabled) return;
@@ -207,99 +344,149 @@ export function stopBGM() {
     }
 }
 
-export function sfxNavigate() {
-    playTone(440, 0.06, 'sine', 0.15);
-    setTimeout(() => playTone(523, 0.06, 'sine', 0.15), 50);
-}
-
-export function sfxTraining() {
-    playTone(659, 0.1, 'triangle', 0.2);
-    setTimeout(() => playTone(784, 0.1, 'triangle', 0.2), 100);
-    setTimeout(() => playTone(880, 0.15, 'triangle', 0.25), 200);
-}
-
-export function sfxGold() {
-    playTone(1319, 0.08, 'sine', 0.3);
-    setTimeout(() => playTone(1568, 0.1, 'sine', 0.3), 60);
-}
-
-export function sfxExplore() {
-    playTone(392, 0.15, 'triangle', 0.2);
-    setTimeout(() => playTone(523, 0.15, 'triangle', 0.2), 120);
-    setTimeout(() => playTone(659, 0.2, 'triangle', 0.2), 240);
-}
-
-/* ====== 卡牌音效 ====== */
-export function sfxCardDraw() {
-    playTone(600, 0.06, 'sine', 0.2);
-    setTimeout(() => playTone(800, 0.06, 'sine', 0.15), 40);
-}
-
-export function sfxCardPlay() {
-    playTone(440, 0.08, 'triangle', 0.3);
-    playNoise(0.06, 0.08);
-}
-
-export function sfxCardReveal() {
-    playTone(523, 0.1, 'sine', 0.2);
-    setTimeout(() => playTone(659, 0.1, 'sine', 0.25), 80);
-    setTimeout(() => playTone(784, 0.12, 'sine', 0.25), 160);
-    playNoise(0.1, 0.04);
-}
-
-export function sfxTowerDestroy() {
-    playNoise(0.3, 0.15);
-    playTone(200, 0.3, 'sawtooth', 0.2);
-    setTimeout(() => playTone(150, 0.4, 'sawtooth', 0.15), 100);
-}
-
-export function sfxObjective() {
-    [392, 523, 659, 784].forEach((f, i) => {
-        setTimeout(() => playTone(f, 0.15, 'triangle', 0.3), i * 100);
-    });
-    setTimeout(() => playNoise(0.2, 0.06), 400);
-}
-
-export function sfxDiscard() {
-    playTone(300, 0.1, 'sawtooth', 0.1);
-}
-
-/* ====== MP3文件播放（BGM/氛围音） ====== */
+/* ====== MP3 BGM + 场景自动切换 ====== */
 let _fileBGM = null;
 let _fileAmbient = null;
+let _currentBGMType = null;
+let _bgmGeneration = 0;
 
 const BGM_FILES = {
     menu:    'resources/audio/bgm/menu.mp3',
+    home:    'resources/audio/bgm/home.mp3',
     battle:  'resources/audio/bgm/battle.mp3',
+    bp:      'resources/audio/bgm/bp.mp3',
+    recruit: 'resources/audio/bgm/recruit.mp3',
+    explore: 'resources/audio/bgm/explore.mp3',
     victory: 'resources/audio/bgm/victory.mp3',
-};
-const AMBIENT_FILES = {
-    crowd: 'resources/audio/ambient/crowd-cheer.mp3',
-    arena: 'resources/audio/ambient/arena-hum.mp3',
+    defeat:  'resources/audio/bgm/defeat.mp3',
 };
 
-function _tryPlayFile(src, loop, volume) {
-    const audio = new Audio();
-    audio.src = src;
-    audio.loop = loop;
-    audio.volume = Math.max(0, Math.min(1, volume));
-    audio.preload = 'auto';
-    const p = audio.play();
+const SCENE_BGM_MAP = {
+    title:         'menu',
+    teamSelect:    'menu',
+    home:          'home',
+    matchCalendar: 'home',
+    roster:        'home',
+    training:      'home',
+    season:        'home',
+    settings:      'home',
+    postcards:     'home',
+    strategyGuide: 'home',
+    recruit:       'recruit',
+    transfer:      'home',
+    collection:    'home',
+    explore:       'explore',
+    bp:            'bp',
+    battle:        'battle',
+    quickBattle:   'battle',
+};
+
+const AMBIENT_FILES = {
+    crowd:   'resources/audio/ambient/crowd-cheer.mp3',
+    arena:   'resources/audio/ambient/arena-hum.mp3',
+    city:    'resources/audio/ambient/city-ambient.mp3',
+    base:    'resources/audio/ambient/base-ambient.mp3',
+};
+
+const CROSSFADE_MS = 800;
+
+function _killAudio(audio) {
+    if (!audio) return;
+    audio.onerror = null;
+    audio.onended = null;
+    audio.pause();
+    audio.src = '';
+}
+
+function _crossfadeBGM(newSrc, loop, vol, gen) {
+    const oldAudio = _fileBGM;
+    if (oldAudio) {
+        oldAudio.onerror = null;
+        const startVol = oldAudio.volume;
+        const fadeStep = startVol / (CROSSFADE_MS / 50);
+        const fadeInterval = setInterval(() => {
+            oldAudio.volume = Math.max(0, oldAudio.volume - fadeStep);
+            if (oldAudio.volume <= 0.01) {
+                clearInterval(fadeInterval);
+                _killAudio(oldAudio);
+            }
+        }, 50);
+    }
+
+    const newAudio = new Audio();
+    newAudio.src = newSrc;
+    newAudio.loop = loop;
+    newAudio.volume = 0;
+    newAudio.preload = 'auto';
+    _fileBGM = newAudio;
+
+    const targetVol = Math.max(0, Math.min(1, vol));
+    const p = newAudio.play();
     if (p && p.catch) p.catch(() => {});
-    return audio;
+
+    const fadeInStep = targetVol / (CROSSFADE_MS / 50);
+    const fadeIn = setInterval(() => {
+        if (_fileBGM !== newAudio) { clearInterval(fadeIn); return; }
+        newAudio.volume = Math.min(targetVol, newAudio.volume + fadeInStep);
+        if (newAudio.volume >= targetVol - 0.01) {
+            newAudio.volume = targetVol;
+            clearInterval(fadeIn);
+        }
+    }, 50);
+
+    newAudio.onerror = () => {
+        if (_bgmGeneration !== gen) return;
+        _fileBGM = null;
+        _currentBGMType = null;
+        startBGM('menu');
+    };
 }
 
 export function startFileBGM(type = 'menu') {
-    stopFileBGM();
-    if (!_enabled) return;
+    if (type === _currentBGMType && _fileBGM && !_fileBGM.paused) return;
+
     const src = BGM_FILES[type];
-    if (!src) return;
-    _fileBGM = _tryPlayFile(src, type !== 'victory', _volume.bgm);
-    _fileBGM.onerror = () => { _fileBGM = null; startBGM(type); };
+    if (!src) { stopFileBGM(); return; }
+
+    const gen = ++_bgmGeneration;
+    const noLoop = type === 'victory' || type === 'defeat';
+    _currentBGMType = type;
+
+    stopBGM();
+
+    if (_fileBGM) {
+        _crossfadeBGM(src, !noLoop, _volume.bgm, gen);
+    } else {
+        const audio = new Audio();
+        audio.src = src;
+        audio.loop = !noLoop;
+        audio.volume = Math.max(0, Math.min(1, _volume.bgm));
+        audio.preload = 'auto';
+        _fileBGM = audio;
+
+        audio.onerror = () => {
+            if (_bgmGeneration !== gen) return;
+            _fileBGM = null;
+            _currentBGMType = null;
+            startBGM('menu');
+        };
+
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => {});
+    }
 }
 
 export function stopFileBGM() {
-    if (_fileBGM) { _fileBGM.pause(); _fileBGM.src = ''; _fileBGM = null; }
+    ++_bgmGeneration;
+    _killAudio(_fileBGM);
+    _fileBGM = null;
+    _currentBGMType = null;
+}
+
+export function stopAllAudio() {
+    stopBGM();
+    stopFileBGM();
+    stopAmbient();
 }
 
 export function startAmbient(type = 'arena') {
@@ -307,15 +494,41 @@ export function startAmbient(type = 'arena') {
     if (!_enabled) return;
     const src = AMBIENT_FILES[type];
     if (!src) return;
-    _fileAmbient = _tryPlayFile(src, true, _volume.bgm * 0.4);
-    _fileAmbient.onerror = () => { _fileAmbient = null; };
+    const audio = new Audio();
+    audio.src = src;
+    audio.loop = true;
+    audio.volume = Math.max(0, Math.min(1, _volume.bgm * 0.4));
+    audio.preload = 'auto';
+    _fileAmbient = audio;
+    audio.onerror = () => { _fileAmbient = null; };
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {});
 }
 
 export function stopAmbient() {
-    if (_fileAmbient) { _fileAmbient.pause(); _fileAmbient.src = ''; _fileAmbient = null; }
+    _killAudio(_fileAmbient);
+    _fileAmbient = null;
 }
 
 export function updateFileVolumes() {
     if (_fileBGM) _fileBGM.volume = Math.max(0, Math.min(1, _volume.bgm));
     if (_fileAmbient) _fileAmbient.volume = Math.max(0, Math.min(1, _volume.bgm * 0.4));
+}
+
+/* ====== 场景BGM自动切换 ====== */
+export function initSceneBGM() {
+    eventBus.on('scene:change', (sceneName) => {
+        if (!_enabled) return;
+        const bgmType = SCENE_BGM_MAP[sceneName];
+        if (bgmType === _currentBGMType && _fileBGM && !_fileBGM.paused) {
+            return;
+        }
+        stopBGM();
+        stopAmbient();
+        if (bgmType) {
+            startFileBGM(bgmType);
+        } else {
+            stopFileBGM();
+        }
+    });
 }

@@ -6,7 +6,8 @@ import { game } from '../core/GameEngine.js';
 import { getTeamById } from '../data/teams.js';
 import { createElement, showToast } from '../ui/Components.js';
 import { staggerIn } from '../ui/Transitions.js';
-import { ECONOMY, TRAINING } from '../data/balance.js';
+import { ECONOMY, TRAINING, GROWTH } from '../data/balance.js';
+import { addTrainingExp, getTrainingExp } from '../systems/PlayerGrowth.js';
 
 export class TrainingScene {
     async enter(container) {
@@ -25,20 +26,18 @@ export class TrainingScene {
         c.innerHTML = `
             <div class="training">
                 <header class="training__header">
-                    <button class="btn btn--outline btn--small" id="btn-back">← 返回基地</button>
+                    <button class="btn btn--back" id="btn-back-home">← 返回基地</button>
                     <h2>🏋️ 训练基地</h2>
-                    <span class="training__gold">金币: ${game.state.team.gold}</span>
+                    <span class="training__gold">💰 ${game.state.team.gold} | 📦 经验池: ${getTrainingExp()}</span>
                 </header>
-                <p class="training__tip">选择一个训练项目，通过小游戏提升选手能力（每次消耗 50 金币）</p>
+                <p class="training__tip">选择训练项目获得训练经验，在选手管理中分配经验升级选手（每次消耗 50 金币）</p>
                 <div class="training__grid" id="training-grid"></div>
             </div>`;
-        c.querySelector('#btn-back').addEventListener('click', () => game.sceneManager.switchTo('home'));
-
         const items = [
-            { id: 'reflex',   icon: '⚡', name: '手速挑战',   desc: '连续点击目标，训练操作能力', stat: '操作', cost: 50 },
-            { id: 'memory',   icon: '🧠', name: '记忆矩阵',   desc: '记住并复现序列，训练意识',   stat: '意识', cost: 50 },
-            { id: 'rhythm',   icon: '🎯', name: '节奏打击',   desc: '按节奏击中目标，训练对线',   stat: '对线', cost: 50 },
-            { id: 'teamwork', icon: '🤝', name: '团队默契',   desc: '快速配对连线，训练配合',     stat: '配合', cost: 50 },
+            { id: 'reflex',   icon: '⚡', name: '手速挑战',   desc: '连续点击目标，训练操作能力', stat: '操作', cost: 50, expBase: GROWTH.TRAINING_BASE_EXP },
+            { id: 'memory',   icon: '🧠', name: '记忆矩阵',   desc: '记住并复现序列，训练意识',   stat: '意识', cost: 50, expBase: GROWTH.TRAINING_BASE_EXP },
+            { id: 'rhythm',   icon: '🎯', name: '节奏打击',   desc: '按节奏击中目标，训练对线',   stat: '对线', cost: 50, expBase: GROWTH.TRAINING_BASE_EXP },
+            { id: 'teamwork', icon: '🤝', name: '团队默契',   desc: '快速配对连线，训练配合',     stat: '配合', cost: 50, expBase: GROWTH.TRAINING_BASE_EXP },
         ];
 
         const grid = c.querySelector('#training-grid');
@@ -48,12 +47,13 @@ export class TrainingScene {
                 <span class="training-card__icon">${item.icon}</span>
                 <span class="training-card__name">${item.name}</span>
                 <span class="training-card__desc">${item.desc}</span>
-                <span class="training-card__stat">提升: ${item.stat}</span>
+                <span class="training-card__stat">经验: ${item.expBase}~${item.expBase * 2}</span>
                 <span class="training-card__cost">💰 ${item.cost}</span>`;
             card.addEventListener('click', () => this._startTraining(item));
             grid.appendChild(card);
         });
         staggerIn([...grid.children], 80);
+        c.querySelector('#btn-back-home')?.addEventListener('click', () => game.sceneManager.switchTo('home'));
     }
 
     _startTraining(item) {
@@ -321,20 +321,12 @@ export class TrainingScene {
         game.state.team.gold -= item.cost;
         const pct = score / total;
         const grade = pct >= TRAINING.GRADE_S_THRESHOLD ? 'S' : pct >= TRAINING.GRADE_A_THRESHOLD ? 'A' : pct >= TRAINING.GRADE_B_THRESHOLD ? 'B' : 'C';
-        const boost = grade === 'S' ? TRAINING.GRADE_S_BOOST : grade === 'A' ? TRAINING.GRADE_A_BOOST : grade === 'B' ? TRAINING.GRADE_B_BOOST : TRAINING.GRADE_C_BOOST;
 
-        let affectedCount = 0;
-        if (boost > 0) {
-            const starterIds = new Set(game.state.starters || []);
-            this._players.forEach(p => {
-                const isTarget = TRAINING.BOOST_TARGET === 'all' || starterIds.has(p.id) || starterIds.size === 0;
-                if (isTarget && p.stats[item.stat] !== undefined) {
-                    p.stats[item.stat] = Math.min(TRAINING.MAX_STAT, p.stats[item.stat] + boost);
-                    affectedCount++;
-                }
-            });
-            game.state.players = this._players;
-        }
+        const baseExp = item.id === 'simBattle' ? GROWTH.TRAINING_ADVANCED_EXP : GROWTH.TRAINING_BASE_EXP;
+        const mult = grade === 'S' ? GROWTH.EXP_GRADE_S : grade === 'A' ? GROWTH.EXP_GRADE_A : grade === 'B' ? GROWTH.EXP_GRADE_B : GROWTH.EXP_GRADE_C;
+        const expGained = Math.round(baseExp * mult);
+
+        addTrainingExp(expGained);
 
         const c = this._container;
         c.innerHTML = `
@@ -344,7 +336,8 @@ export class TrainingScene {
                     <h3>训练完成！</h3>
                     <p>得分: ${score} / ${total}</p>
                     <p>评级: <strong>${grade}</strong></p>
-                    ${boost > 0 ? `<p class="mg-result__boost">首发${affectedCount}名选手「${item.stat}」 +${boost} 🎉</p>` : '<p class="mg-result__boost mg-result__boost--none">未达标，无属性提升</p>'}
+                    <p class="mg-result__boost">获得训练经验: <strong style="color:var(--color-gold)">+${expGained}</strong> 🎉</p>
+                    <p style="font-size:13px;color:var(--color-text-dim)">当前经验池: ${getTrainingExp()}</p>
                     <p class="mg-result__cost">消耗金币: ${item.cost}</p>
                     <div class="mg-result__btns">
                         <button class="btn btn--gold" id="btn-retry">再次训练</button>

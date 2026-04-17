@@ -36,7 +36,7 @@ export class SettingsScene {
         container.innerHTML = `
         <div class="settings-page">
             <div class="settings-header">
-                <button class="btn btn--outline settings-back" id="btn-back">← 返回</button>
+                <button class="btn btn--back" id="btn-back">← 返回基地</button>
                 <h1 class="settings-title">⚙️ 游戏设置</h1>
                 <div></div>
             </div>
@@ -155,7 +155,7 @@ export class SettingsScene {
     _bind(container) {
         container.querySelector('#btn-back').addEventListener('click', () => {
             sfxClick();
-            game.sceneManager.switchTo('title');
+            game.sceneManager.switchTo('home');
         });
 
         // 预设按钮

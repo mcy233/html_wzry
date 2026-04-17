@@ -1,0 +1,214 @@
+/* strategy-guide.css - 策略图鉴场景 */
+.scene--strategy-guide {
+    background: url('../../resources/bg/battle-bg.webp') center/cover no-repeat,
+                var(--color-bg);
+    position: relative;
+}
+.scene--strategy-guide::before {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    z-index: 0; pointer-events: none;
+}
+.scene--strategy-guide > * { position: relative; z-index: 1; }
+
+.strategy-guide {
+    height: 100%; display: flex; flex-direction: column;
+    animation: fadeIn 0.3s ease;
+}
+
+/* 顶栏 */
+.sg__header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: linear-gradient(180deg, rgba(10,14,23,0.95), rgba(10,14,23,0.7));
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+}
+.sg__title {
+    font-size: 18px; font-weight: 900; color: var(--color-gold);
+    letter-spacing: 2px;
+}
+.sg__back {
+    padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--radius-sm); background: rgba(255,255,255,0.05);
+    color: var(--color-text); cursor: pointer; font-size: 12px;
+    transition: all 0.15s;
+}
+.sg__back:hover {
+    border-color: var(--color-accent); background: rgba(78,168,222,0.1);
+}
+
+/* 主体 */
+.sg__body {
+    flex: 1; display: flex; min-height: 0; overflow: hidden;
+}
+
+/* 左侧节点导航 */
+.sg__nav {
+    width: 160px; flex-shrink: 0; padding: 8px;
+    display: flex; flex-direction: column; gap: 4px;
+    background: rgba(10,14,23,0.6);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    overflow-y: auto;
+}
+.sg__nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--color-text-dim); cursor: pointer;
+    font-size: 13px; font-weight: 600;
+    transition: all 0.2s;
+    text-align: left;
+}
+.sg__nav-item:hover {
+    background: rgba(255,255,255,0.04);
+    color: var(--color-text);
+}
+.sg__nav-item--active {
+    background: rgba(240,192,64,0.1);
+    border-color: rgba(240,192,64,0.3);
+    color: var(--color-gold);
+}
+.sg__nav-icon { font-size: 18px; }
+.sg__nav-label { flex: 1; }
+.sg__nav-time { font-size: 10px; opacity: 0.6; }
+
+/* 中间卡牌网格 */
+.sg__grid {
+    flex: 1; min-width: 0; padding: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    overflow-y: auto;
+}
+.sg__grid-title {
+    font-size: 14px; font-weight: 700; color: var(--color-text-dim);
+    margin-bottom: 4px;
+}
+.sg__cards {
+    display: flex; flex-wrap: wrap; gap: 10px;
+}
+.sg-card {
+    width: 200px; padding: 14px; border-radius: 10px; cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.08);
+    background: var(--color-surface);
+    transition: all 0.2s;
+}
+.sg-card:hover {
+    border-color: rgba(240,192,64,0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+.sg-card--active {
+    border-color: rgba(240,192,64,0.6);
+    background: rgba(240,192,64,0.08);
+    box-shadow: 0 0 12px rgba(240,192,64,0.15);
+}
+.sg-card--aggression { border-left: 4px solid #e74c3c; }
+.sg-card--defense { border-left: 4px solid #3498db; }
+.sg-card--tactic { border-left: 4px solid #f0c040; }
+.sg-card--economy { border-left: 4px solid #2ecc71; }
+.sg-card--objective { border-left: 4px solid #9b59b6; }
+
+.sg-card__header {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+}
+.sg-card__icon { font-size: 22px; }
+.sg-card__name { font-size: 14px; font-weight: 800; color: #fff; }
+.sg-card__desc { font-size: 11px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+
+/* 右侧详情 */
+.sg__detail {
+    width: 320px; flex-shrink: 0; padding: 16px;
+    background: linear-gradient(180deg, rgba(10,14,23,0.8), rgba(10,14,23,0.95));
+    border-left: 1px solid rgba(255,255,255,0.05);
+    overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+}
+.sg__detail-empty {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--color-text-dim); font-size: 13px; opacity: 0.5;
+}
+
+.sg-detail__header {
+    display: flex; align-items: center; gap: 10px;
+    padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sg-detail__icon { font-size: 36px; }
+.sg-detail__info { flex: 1; }
+.sg-detail__name { font-size: 18px; font-weight: 900; color: #fff; }
+.sg-detail__type { font-size: 12px; font-weight: 600; margin-top: 2px; }
+
+.sg-detail__section { margin-bottom: 4px; }
+.sg-detail__label {
+    font-size: 11px; font-weight: 700; color: var(--color-text-dim);
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;
+}
+.sg-detail__text {
+    font-size: 12px; line-height: 1.6; color: var(--color-text);
+}
+.sg-detail__effects {
+    display: flex; flex-wrap: wrap; gap: 6px;
+}
+.sg-detail__effect {
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 700;
+}
+.sg-detail__effect--gain {
+    background: rgba(42,157,143,0.15); color: #2a9d8f;
+    border: 1px solid rgba(42,157,143,0.3);
+}
+.sg-detail__effect--cost {
+    background: rgba(231,76,60,0.1); color: #e74c3c;
+    border: 1px solid rgba(231,76,60,0.2);
+}
+.sg-detail__effect--buff {
+    background: rgba(240,192,64,0.1); color: var(--color-gold);
+    border: 1px solid rgba(240,192,64,0.2);
+}
+
+/* 克制关系图 */
+.sg-detail__counters {
+    display: flex; flex-direction: column; gap: 6px;
+}
+.sg-detail__counter {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 6px; font-size: 12px;
+}
+.sg-detail__counter--win {
+    background: rgba(46,204,113,0.1); color: #3ecf8e;
+    border: 1px solid rgba(46,204,113,0.2);
+}
+.sg-detail__counter--lose {
+    background: rgba(231,76,60,0.1); color: #e74c3c;
+    border: 1px solid rgba(231,76,60,0.2);
+}
+.sg-detail__counter--safe {
+    background: rgba(240,192,64,0.08); color: var(--color-gold);
+    border: 1px solid rgba(240,192,64,0.15);
+}
+
+/* 克制循环图 */
+.sg-detail__cycle {
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px; padding: 10px; margin-top: 4px;
+    background: rgba(255,255,255,0.02); border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    flex-wrap: wrap;
+}
+.sg-detail__cycle-arrow { color: var(--color-gold); }
+
+.sg-detail__bonus {
+    padding: 8px 12px; border-radius: 6px; font-size: 11px;
+    background: rgba(42,157,143,0.08); border: 1px solid rgba(42,157,143,0.15);
+    color: var(--color-accent);
+}
+
+/* 响应式 */
+@media (max-width: 900px) {
+    .sg__body { flex-direction: column; }
+    .sg__nav { width: 100%; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .sg__nav-item { padding: 8px; flex-shrink: 0; }
+    .sg__nav-time { display: none; }
+    .sg__detail { width: 100%; border-left: none; border-top: 1px solid rgba(255,255,255,0.05); }
+    .sg__cards { justify-content: center; }
+}

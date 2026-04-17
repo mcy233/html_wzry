@@ -1,0 +1,140 @@
+/* collection.css → 荣誉体系 (Honor System) */
+.scene--collection { overflow-y: auto; }
+
+.col-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+        url('../../resources/bg/collection-bg.webp') center/cover no-repeat,
+        linear-gradient(180deg, #0a0e17 0%, #101830 50%, #0a0e17 100%);
+}
+.col-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(10,14,23,0.7) 0%, rgba(10,14,23,0.55) 40%, rgba(10,14,23,0.75) 100%);
+}
+
+.col-layout {
+    position: relative; z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 16px 40px;
+}
+
+.col-topbar {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+}
+.col-topbar h2 { font-size: 18px; font-weight: 800; }
+
+/* ══════════ 战队英雄区 ══════════ */
+.honor-hero {
+    display: flex; align-items: center; gap: 18px;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, rgba(12,16,32,0.92) 0%, rgba(20,28,52,0.88) 100%);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(78,168,222,0.25);
+    border-radius: 14px;
+    margin-bottom: 20px;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.honor-hero__logo {
+    flex-shrink: 0; width: 72px; height: 72px;
+    border-radius: 12px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+}
+.honor-hero__info { flex: 1; }
+.honor-hero__name {
+    font-size: 24px; font-weight: 900; color: #fff;
+    letter-spacing: 2px; margin: 0 0 4px;
+}
+.honor-hero__phase {
+    font-size: 13px; color: rgba(255,255,255,0.5);
+    margin: 0;
+}
+
+/* ══════════ 数据网格 ══════════ */
+.honor-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+}
+.honor-stat {
+    text-align: center;
+    padding: 16px 12px;
+    background: rgba(10,14,23,0.8);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-radius: 10px;
+    border: 1.5px solid rgba(78,168,222,0.2);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.honor-stat__val {
+    display: block; font-size: 28px; font-weight: 900;
+    color: #fff; line-height: 1.1;
+}
+.honor-stat__val--accent { color: var(--color-accent); }
+.honor-stat__val--gold { color: var(--color-gold); }
+.honor-stat__label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    margin-top: 4px; letter-spacing: 0.5px;
+}
+
+/* ══════════ 成就徽章 ══════════ */
+.honor-section-title {
+    font-size: 16px; font-weight: 800;
+    color: var(--color-gold);
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(240,192,64,0.15);
+}
+
+.honor-badges {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+.honor-badge {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: rgba(10,14,23,0.75);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border-radius: 10px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    opacity: 0.4;
+    transition: all 0.2s;
+}
+.honor-badge--unlocked {
+    opacity: 1;
+    border-color: rgba(240,192,64,0.35);
+    background: linear-gradient(135deg, rgba(240,192,64,0.1) 0%, rgba(10,14,23,0.75) 100%);
+    box-shadow: 0 3px 14px rgba(0,0,0,0.35), 0 0 8px rgba(240,192,64,0.06);
+}
+.honor-badge--unlocked:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4), 0 0 12px rgba(240,192,64,0.1);
+}
+
+.honor-badge__icon { font-size: 28px; flex-shrink: 0; }
+.honor-badge__info { flex: 1; min-width: 0; }
+.honor-badge__label {
+    display: block; font-size: 14px; font-weight: 700; color: #fff;
+}
+.honor-badge__desc {
+    display: block; font-size: 11px; color: rgba(255,255,255,0.45);
+    margin-top: 2px;
+}
+.honor-badge__check {
+    font-size: 16px; font-weight: 800;
+    color: var(--color-success);
+}
+
+/* ══════════ 响应式 ══════════ */
+@media (max-width: 560px) {
+    .honor-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .honor-stat__val { font-size: 22px; }
+    .honor-badges { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,187 @@
+/* transfer.css - 转会市场（电竞经理表格风格） */
+.scene--transfer { overflow-y: auto; }
+
+.tfr-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+        url('../../resources/bg/transfer-bg.webp?v=2') center/cover no-repeat,
+        linear-gradient(135deg, #0a0e17 0%, #152040 50%, #1a1535 100%);
+}
+.tfr-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(10,14,23,0.3) 0%, rgba(10,14,23,0.6) 100%);
+}
+
+.tfr-layout {
+    position: relative; z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 20px 20px;
+}
+
+/* ══════════ 顶栏 ══════════ */
+.tfr-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; gap: 16px;
+}
+.tfr-topbar__left { display: flex; align-items: center; gap: 12px; }
+.tfr-topbar__left h2 {
+    font-size: 20px; font-weight: 900; color: #e74c3c;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(231,76,60,0.3);
+}
+.tfr-topbar__right { display: flex; align-items: center; gap: 20px; }
+.tfr-topbar__timer { font-size: 12px; color: #4ea8de; }
+.tfr-topbar__timer strong { color: #fff; }
+.tfr-topbar__gold {
+    font-size: 15px; font-weight: 800; color: var(--color-gold);
+    background: rgba(240,192,64,0.1); padding: 4px 14px; border-radius: 6px;
+    border: 1px solid rgba(240,192,64,0.2);
+}
+
+/* ══════════ Tabs ══════════ */
+.tfr-tabs {
+    display: flex; gap: 4px; margin-bottom: 12px;
+    background: rgba(26,34,53,0.5);
+    border-radius: var(--radius); padding: 3px;
+}
+.tfr-tab {
+    flex: 1; padding: 10px 12px; text-align: center;
+    border: none; background: transparent;
+    color: var(--color-text-dim); font-weight: 600;
+    font-size: 13px; font-family: var(--font-main);
+    border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;
+}
+.tfr-tab:hover { color: var(--color-text); }
+.tfr-tab--active {
+    background: var(--color-surface); color: var(--color-accent);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.tfr-body { min-height: 200px; }
+.tfr-empty {
+    text-align: center; padding: 60px 20px;
+    color: var(--color-text-dim); font-size: 14px;
+}
+
+/* ══════════ 表格 ══════════ */
+.tfr-table {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.tfr-table__head {
+    display: flex; align-items: center;
+    padding: 10px 16px; gap: 8px;
+    background: rgba(30,50,90,0.6);
+    border-bottom: 2px solid rgba(78,168,222,0.2);
+}
+.tfr-th {
+    font-size: 12px; font-weight: 700; color: #8892a4;
+    cursor: pointer; user-select: none;
+    transition: color 0.15s;
+    white-space: nowrap;
+}
+.tfr-th:hover { color: #fff; }
+
+.tfr-th--player  { flex: 2; min-width: 120px; }
+.tfr-th--rarity  { width: 56px; text-align: center; }
+.tfr-th--rating  { width: 50px; text-align: center; }
+.tfr-th--role    { width: 56px; text-align: center; }
+.tfr-th--team    { width: 70px; text-align: center; }
+.tfr-th--power   { width: 60px; text-align: center; }
+.tfr-th--price   { width: 80px; text-align: center; }
+.tfr-th--action  { width: 64px; text-align: center; }
+
+.tfr-table__body { }
+
+/* ══════════ 行 ══════════ */
+.tfr-row {
+    display: flex; align-items: center;
+    padding: 8px 16px; gap: 8px;
+    background: rgba(16,22,38,0.7);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.15s;
+    border-left: 3px solid var(--rc, #4ea8de);
+}
+.tfr-row:hover { background: rgba(30,50,90,0.5); }
+.tfr-row:nth-child(even) { background: rgba(20,28,48,0.7); }
+.tfr-row:nth-child(even):hover { background: rgba(30,50,90,0.5); }
+
+/* ══════════ 单元格 ══════════ */
+.tfr-cell { font-size: 13px; color: #e8eaf0; }
+
+.tfr-cell--player {
+    flex: 2; min-width: 120px;
+    display: flex; align-items: center; gap: 10px;
+}
+.tfr-avatar {
+    flex-shrink: 0; width: 40px; height: 40px;
+    border-radius: 6px; overflow: hidden;
+    background: rgba(255,255,255,0.03);
+    display: flex; align-items: center; justify-content: center;
+}
+.tfr-player-info { display: flex; flex-direction: column; gap: 1px; }
+.tfr-player-name { font-size: 14px; font-weight: 700; color: #fff; }
+.tfr-player-sub { font-size: 10px; color: #6b7a8f; }
+
+.tfr-cell--rarity { width: 56px; text-align: center; }
+.tfr-badge {
+    display: inline-block; font-size: 11px; font-weight: 900;
+    border: 1px solid; padding: 1px 8px;
+    border-radius: 3px; letter-spacing: 1px;
+}
+
+.tfr-cell--rating { width: 50px; text-align: center; }
+.tfr-cell--rating strong { font-size: 16px; font-weight: 900; color: #fff; }
+
+.tfr-cell--role { width: 56px; text-align: center; color: #8892a4; font-size: 12px; }
+.tfr-cell--team { width: 70px; text-align: center; color: #8892a4; font-size: 12px; }
+.tfr-cell--power { width: 60px; text-align: center; color: var(--color-accent); font-size: 12px; font-weight: 700; }
+
+.tfr-cell--price { width: 80px; text-align: center; }
+.tfr-price {
+    font-size: 13px; font-weight: 800; color: var(--color-gold);
+    background: rgba(240,192,64,0.08);
+    padding: 3px 10px; border-radius: 4px;
+    white-space: nowrap;
+}
+
+.tfr-cell--action { width: 64px; text-align: center; }
+
+.tfr-buy-btn {
+    padding: 5px 14px; border: none;
+    border-radius: 4px; font-size: 12px; font-weight: 700;
+    font-family: var(--font-main);
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #fff; cursor: pointer;
+    transition: all 0.2s;
+}
+.tfr-buy-btn:hover { background: linear-gradient(135deg, #60a5fa, #3b82f6); transform: scale(1.05); }
+.tfr-buy-btn--disabled { opacity: 0.4; cursor: not-allowed; }
+
+.tfr-dismiss-btn {
+    padding: 5px 14px; border: none;
+    border-radius: 4px; font-size: 12px; font-weight: 700;
+    font-family: var(--font-main);
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff; cursor: pointer;
+    transition: all 0.2s;
+}
+.tfr-dismiss-btn:hover { background: linear-gradient(135deg, #f87171, #ef4444); transform: scale(1.05); }
+
+/* ══════════ 刷新按钮 ══════════ */
+.tfr-refresh {
+    text-align: center; padding: 16px 0;
+}
+
+/* ══════════ 响应式 ══════════ */
+@media (max-width: 640px) {
+    .tfr-topbar { flex-wrap: wrap; }
+    .tfr-topbar__right { width: 100%; justify-content: space-between; }
+    .tfr-th--team, .tfr-cell--team,
+    .tfr-th--power, .tfr-cell--power { display: none; }
+    .tfr-row { padding: 8px 10px; }
+}

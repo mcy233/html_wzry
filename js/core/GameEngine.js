@@ -41,6 +41,16 @@ class GameEngine {
             explore: {},
             storyFlags: {},
             seasonSystem: null,
+
+            rosterAll: [],
+            trainingExp: 0,
+            recruit: { goldPity: 0, bluePity: 0, wishList: [], history: [] },
+            transfer: { market: [], lastRefreshPhase: '' },
+            collectionData: { unlocked: [], totalValue: 0, claimedRewards: [] },
+            fragments: { universal: 0 },
+            tickets: { gold: 5, blue: 20 },
+            recruitGold: 0,
+            quickBattle: { defaultMode: 'detailed' },
         };
     }
 
@@ -64,6 +74,10 @@ class GameEngine {
     save() {
         SaveManager.save(this.state);
         eventBus.emit('ui:toast', '存档成功');
+    }
+
+    silentSave() {
+        SaveManager.save(this.state);
     }
 
     newGame() {

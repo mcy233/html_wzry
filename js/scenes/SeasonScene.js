@@ -45,7 +45,7 @@ export class SeasonScene {
         c.innerHTML = `
             <div class="season">
                 <header class="season__header">
-                    <button class="btn btn--outline btn--small" id="btn-back">← 返回基地</button>
+                    <button class="btn btn--back" id="btn-back">← 返回基地</button>
                     <h2>📋 赛季总览</h2>
                     <div class="season__phase-info">
                         <span class="season__phase">${phase?.name || '赛季结束'}</span>
@@ -62,7 +62,7 @@ export class SeasonScene {
                 <div class="season__content" id="season-content"></div>
             </div>`;
 
-        c.querySelector('#btn-back').addEventListener('click', () => game.sceneManager.switchTo('home'));
+        c.querySelector('#btn-back')?.addEventListener('click', () => game.sceneManager.switchTo('home'));
         c.querySelectorAll('.season-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 c.querySelectorAll('.season-tab').forEach(t => t.classList.remove('season-tab--active'));

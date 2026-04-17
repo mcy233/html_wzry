@@ -6,6 +6,7 @@ import { eventBus } from './core/EventBus.js';
 import { TitleScene } from './scenes/TitleScene.js';
 import { TeamSelectScene } from './scenes/TeamSelectScene.js';
 import { HomeScene } from './scenes/HomeScene.js';
+import { BPScene } from './scenes/BPScene.js';
 import { BattleScene } from './scenes/BattleScene.js';
 import { ExploreScene } from './scenes/ExploreScene.js';
 import { TrainingScene } from './scenes/TrainingScene.js';
@@ -13,8 +14,15 @@ import { RosterScene } from './scenes/RosterScene.js';
 import { SeasonScene } from './scenes/SeasonScene.js';
 import { SettingsScene } from './scenes/SettingsScene.js';
 import { PostcardScene } from './scenes/PostcardScene.js';
+import { StrategyGuideScene } from './scenes/StrategyGuideScene.js';
+import { MatchCalendarScene } from './scenes/MatchCalendarScene.js';
+import { RecruitScene } from './scenes/RecruitScene.js';
+import { TransferScene } from './scenes/TransferScene.js';
+import { CollectionScene } from './scenes/CollectionScene.js';
+import { QuickBattleScene } from './scenes/QuickBattleScene.js';
 import { showToast } from './ui/Components.js';
-import { setVolume, setEnabled } from './ui/SoundManager.js';
+import { setVolume, setEnabled, initSceneBGM } from './ui/SoundManager.js';
+
 
 /* ── 加载界面控制 ── */
 
@@ -83,6 +91,7 @@ function boot() {
     game.sceneManager.register('title', new TitleScene());
     game.sceneManager.register('teamSelect', new TeamSelectScene());
     game.sceneManager.register('home', new HomeScene());
+    game.sceneManager.register('bp', new BPScene());
     game.sceneManager.register('battle', new BattleScene());
     game.sceneManager.register('explore', new ExploreScene());
     game.sceneManager.register('training', new TrainingScene());
@@ -90,6 +99,12 @@ function boot() {
     game.sceneManager.register('season', new SeasonScene());
     game.sceneManager.register('settings', new SettingsScene());
     game.sceneManager.register('postcards', new PostcardScene());
+    game.sceneManager.register('strategyGuide', new StrategyGuideScene());
+    game.sceneManager.register('matchCalendar', new MatchCalendarScene());
+    game.sceneManager.register('recruit', new RecruitScene());
+    game.sceneManager.register('transfer', new TransferScene());
+    game.sceneManager.register('collection', new CollectionScene());
+    game.sceneManager.register('quickBattle', new QuickBattleScene());
 
     updateLoading(70, '加载数据模块...');
     eventBus.on('ui:toast', (msg) => showToast(msg));
@@ -100,6 +115,9 @@ function boot() {
         if (saved.bgmVolume != null) setVolume('bgm', saved.bgmVolume / 100);
         if (saved.sfxVolume != null) setVolume('sfx', saved.sfxVolume / 100);
     } catch { /* ignore */ }
+
+    updateLoading(85, '初始化音效系统...');
+    initSceneBGM();
 
     updateLoading(90, '准备就绪...');
 

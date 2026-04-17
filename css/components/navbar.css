@@ -1,0 +1,74 @@
+/* BottomNavBar - 全局底部导航栏 */
+.g-navbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 900;
+    height: 56px;
+    background: linear-gradient(180deg, rgba(10,14,23,0.92) 0%, rgba(10,14,23,0.98) 100%);
+    border-top: 1px solid rgba(78,168,222,0.2);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+    will-change: transform;
+}
+.g-navbar--hidden {
+    transform: translateY(100%);
+    pointer-events: none;
+}
+
+.g-navbar__inner {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    height: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 4px;
+}
+
+.g-navbar__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-dim);
+    font-family: var(--font-main);
+    cursor: pointer;
+    padding: 4px 2px;
+    position: relative;
+    transition: color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    min-width: 0;
+}
+.g-navbar__item:hover {
+    color: var(--color-text);
+}
+.g-navbar__item--active {
+    color: var(--color-accent);
+}
+.g-navbar__item--active::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 25%; right: 25%;
+    height: 2px;
+    background: var(--color-accent);
+    border-radius: 0 0 2px 2px;
+    box-shadow: 0 0 8px rgba(78,168,222,0.5);
+}
+
+.g-navbar__icon {
+    font-size: 20px;
+    line-height: 1;
+}
+.g-navbar__label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}

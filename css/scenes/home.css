@@ -1,42 +1,257 @@
-/* home.css - 主基地界面 */
-.scene--home { background: var(--color-bg); }
-.home { padding-bottom: 20px; }
-.home__header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 16px 20px; flex-wrap: wrap; gap: 12px;
-    background: linear-gradient(135deg, var(--color-bg-light), var(--color-surface));
-    border-bottom: 2px solid var(--team-color, var(--color-gold));
+/* home.css - 主界面（电竞经理风格） */
+
+.scene--home { overflow: hidden !important; }
+
+/* ── 全屏背景 ── */
+.home-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+        url('../../resources/bg/home-bg.webp') center/cover no-repeat,
+        linear-gradient(135deg, #0a0e17 0%, #162038 40%, #1a1040 70%, #0a0e17 100%);
 }
-.home__team-info { display: flex; align-items: center; gap: 12px; }
-.home__team-badge {
-    width: 48px; height: 48px;
-    display: flex; align-items: center; justify-content: center;
+.home-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg,
+        rgba(10,14,23,0.1) 0%,
+        rgba(10,14,23,0) 30%,
+        rgba(10,14,23,0.55) 100%
+    );
+}
+
+.home-layout {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column;
+    height: 100vh;
+}
+
+/* ══════════ 悬浮顶栏（叠在背景上） ══════════ */
+.home-topbar {
+    position: absolute; top: 0; left: 0; right: 0;
+    z-index: 10;
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 10px 32px;
+    background: linear-gradient(180deg, rgba(10,14,23,0.65) 0%, rgba(10,14,23,0) 100%);
+    pointer-events: none;
+}
+.home-topbar__res {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    pointer-events: auto;
+}
+.res-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 700; color: var(--color-gold); white-space: nowrap;
+    background: rgba(10,14,23,0.55);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.res-item--accent { color: var(--color-accent); }
+.res-icon { font-size: 14px; }
+.res-val { font-variant-numeric: tabular-nums; }
+
+/* ══════════ 左上角战队信息卡 ══════════ */
+.home-team-card {
+    position: absolute;
+    top: 52px; left: 24px;
+    z-index: 10;
+    display: flex; align-items: flex-start; gap: 14px;
+    background: linear-gradient(135deg, rgba(16,22,40,0.85) 0%, rgba(26,36,64,0.75) 100%);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(78,168,222,0.18);
+    border-radius: 12px;
+    padding: 16px 22px;
+    min-width: 260px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.home-team-card__logo {
     flex-shrink: 0;
+    width: 56px; height: 56px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.03);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-.home__team-badge svg { width: 48px; height: 48px; }
-.home__team-name { font-size: 20px; font-weight: 800; }
-.home__city { font-size: 12px; color: var(--color-text-dim); }
+.home-team-card__logo .img-wrapper { border-radius: 8px; }
 
-.home__stats { display: flex; gap: 16px; }
-.home__stat { text-align: center; }
-.home__stat-label { display: block; font-size: 10px; color: var(--color-text-dim); text-transform: uppercase; letter-spacing: 1px; }
-.home__stat-value { display: block; font-size: 18px; font-weight: 800; color: var(--color-gold); }
-
-.home__season-bar {
-    display: flex; justify-content: space-between;
-    padding: 10px 20px; background: var(--color-surface);
-    font-size: 13px; color: var(--color-text-dim);
-    border-bottom: 1px solid var(--color-surface-light);
+.home-team-card__info {
+    display: flex; flex-direction: column; gap: 3px; min-width: 0;
 }
 
-.home__menu {
-    display: grid; grid-template-columns: 1fr; gap: 8px;
-    padding: 16px 20px;
+.home-team-card__name {
+    font-size: 20px; font-weight: 900; color: #fff;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(78,168,222,0.3);
+    line-height: 1.2;
 }
-@media (min-width: 600px) { .home__menu { grid-template-columns: 1fr 1fr; } }
 
-.home__roster { padding: 0 20px; }
-.roster-title { font-size: 16px; margin-bottom: 12px; color: var(--color-text-dim); }
-.roster-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px;
+.home-team-card__power {
+    font-size: 13px; color: #8fb8e0;
+}
+.home-team-card__power strong {
+    color: var(--color-accent); font-size: 16px; font-weight: 900;
+    margin-left: 2px;
+}
+
+.home-team-card__season {
+    font-size: 12px; color: #6b8aad; font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.home-team-card__record {
+    font-size: 12px; color: #f0c040; font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.home-team-card__badge {
+    position: absolute; top: 10px; right: 14px;
+    font-size: 11px; color: rgba(255,255,255,0.35);
+    font-weight: 600;
+}
+
+/* ══════════ 主体 ══════════ */
+.home-body {
+    flex: 1; display: flex; overflow: hidden; min-height: 0;
+    position: relative;
+}
+
+/* ── 团队形象贴图（固定展示） ── */
+.home-team-art {
+    position: absolute;
+    left: 0; bottom: 0;
+    height: 80%;
+    width: auto;
+    max-width: 55%;
+    object-fit: contain;
+    object-position: left bottom;
+    user-select: none;
+    pointer-events: none;
+    filter: drop-shadow(4px 0 30px rgba(0,0,0,0.5));
+    z-index: 1;
+}
+
+/* ══════════ 右侧菱形卡牌入口 ══════════ */
+.home-cards {
+    position: relative;
+    z-index: 2;
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 24px 48px 24px 24px;
+}
+
+.home-cards__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.hcard {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border: none;
+    background: url('../../resources/ui/card-entry-bg.webp') center/100% 100% no-repeat;
+    color: #fff;
+    cursor: pointer;
+    font-family: var(--font-main);
+    text-align: left;
+    transition: all 0.25s ease;
+    min-height: 64px;
+    min-width: 160px;
+}
+.hcard::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(78,168,222,0.06), transparent 60%);
+    pointer-events: none;
+    transition: background 0.25s;
+}
+.hcard:hover {
+    transform: translateX(-8px) scale(1.03);
+    filter: brightness(1.25);
+}
+.hcard:hover::before {
+    background: linear-gradient(135deg, rgba(78,168,222,0.18), transparent 60%);
+}
+.hcard:active {
+    transform: translateX(-3px) scale(0.97);
+}
+
+.hcard__icon {
+    font-size: 30px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 8px rgba(78,168,222,0.4));
+}
+.hcard__title {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+}
+
+.hcard--save { opacity: 0.7; }
+.hcard--save:hover { opacity: 1; }
+
+/* ══════════ 底部导航栏 ══════════ */
+.home-bottombar {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    background: url('../../resources/ui/navbar-bg.webp') center/cover no-repeat,
+                rgba(10,14,23,0.92);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(78,168,222,0.2);
+    position: relative;
+}
+.home-nav-btn {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; padding: 10px 4px;
+    background: transparent; border: none;
+    color: var(--color-text-dim);
+    cursor: pointer; font-family: var(--font-main);
+    transition: all 0.2s; position: relative;
+}
+.home-nav-btn::after {
+    content: '';
+    position: absolute; top: 0; left: 20%; right: 20%;
+    height: 2px; background: var(--color-accent);
+    border-radius: 0 0 2px 2px;
+    opacity: 0; transition: opacity 0.2s;
+}
+.home-nav-btn:hover { color: var(--color-text); background: rgba(78,168,222,0.06); }
+.home-nav-btn:hover::after { opacity: 1; }
+.home-nav-btn__icon { font-size: 22px; line-height: 1; }
+.home-nav-btn__label { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
+
+/* ══════════ 响应式 ══════════ */
+@media (max-width: 768px) {
+    .home-topbar { padding: 8px 12px; }
+    .home-topbar__res { gap: 4px; }
+    .res-item { padding: 4px 8px; font-size: 11px; }
+
+    .home-team-card {
+        top: 44px; left: 12px;
+        padding: 12px 16px; min-width: 200px;
+    }
+    .home-team-card__logo { width: 40px; height: 40px; }
+    .home-team-card__name { font-size: 16px; }
+    .home-team-card__power { font-size: 12px; }
+    .home-team-card__power strong { font-size: 14px; }
+
+    .home-team-art { height: 70%; max-width: 50%; }
+    .home-cards { padding: 12px 16px 12px 12px; }
+    .home-cards__grid { gap: 8px; }
+    .hcard { padding: 14px 16px; min-height: 50px; min-width: 120px; }
+    .hcard__icon { font-size: 22px; }
+    .hcard__title { font-size: 14px; letter-spacing: 1px; }
 }
